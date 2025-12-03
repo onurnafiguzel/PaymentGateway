@@ -1,0 +1,37 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/gateway/">
+    <Project Path="src/gateway/Gateway.Api/Gateway.Api.csproj" Id="383de6ab-a3a3-4102-aa0c-f5637bc80e64" />
+  </Folder>
+  <Folder Name="/src/services/" />
+  <Folder Name="/src/services/fraud-service/">
+    <Project Path="src/services/fraud-service/FraudService.Api/FraudService.Api.csproj" Id="cb825034-b7de-435a-808e-69ab94f2f89e" />
+    <Project Path="src/services/fraud-service/FraudService.Core/FraudService.Core.csproj" Id="fedfc95a-93ef-4b50-b134-06778ea93e12" />
+  </Folder>
+  <Folder Name="/src/services/notification-service/">
+    <Project Path="src/services/notification-service/NotificationService/NotificationService.Api.csproj" Id="54de6a7a-7a6a-45b6-b24c-973b1acc606c" />
+  </Folder>
+  <Folder Name="/src/services/payment-orchestrator/">
+    <Project Path="src/services/payment-orchestrator/PaymentOrchestrator.Api/PaymentOrchestrator.Api.csproj" Id="3641b1fb-f661-4fc8-9141-1d5eece37664" />
+    <Project Path="src/services/payment-orchestrator/PaymentOrchestrator.Application/PaymentOrchestrator.Application.csproj" Id="be6a400a-b3e3-4084-8a17-17283385f30b" />
+    <Project Path="src/services/payment-orchestrator/PaymentOrchestrator.Domain/PaymentOrchestrator.Domain.csproj" Id="3d21fcee-98a4-4839-bac3-da1b3b570c8f" />
+    <Project Path="src/services/payment-orchestrator/PaymentOrchestrator.Infrastructure/PaymentOrchestrator.Infrastructure.csproj" Id="201b5f2a-fd13-446f-972f-3bded846da20" />
+  </Folder>
+  <Folder Name="/src/services/providers/">
+    <Project Path="src/services/providers/ProviderIyzico.Api/ProviderIyzico.Api.csproj" Id="aa21721a-145a-4396-a6c2-115dd64c55cf" />
+    <Project Path="src/services/providers/ProviderPayTR.Api/ProviderPayTR.Api.csproj" Id="5b39dfa0-3ca6-4095-b895-eb295ce0b487" />
+    <Project Path="src/services/providers/ProviderStripe.Api/ProviderStripe.Api.csproj" Id="eb859820-5f16-4fae-acc6-0a1769f52083" />
+  </Folder>
+  <Folder Name="/src/services/reporting-service/">
+    <Project Path="src/services/reporting-service/ReportingService.Api/ReportingService.Api.csproj" Id="8f65102a-6ee5-4d47-8d8d-c5f445a3289e" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/Shared.Contracts/Shared.Contracts.csproj" Id="07c17cac-d8f4-4bf4-8844-3aabe9245ad4" />
+    <Project Path="src/shared/Shared.Kernel/Shared.Kernel.csproj" Id="08602492-d10f-48d5-92c5-34b73d73b730" />
+    <Project Path="src/shared/Shared.Messaging/Shared.Messaging.csproj" Id="858af571-1f57-431a-bafe-3725e7261461" />
+  </Folder>
+</Solution>

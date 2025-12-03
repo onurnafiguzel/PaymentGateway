@@ -1,0 +1,46 @@
+<Project>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+	
+	<ItemGroup>
+
+		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+
+		<PackageVersion Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+
+		<PackageVersion Include="Serilog" Version="3.1.1" />
+		<PackageVersion Include="Serilog.AspNetCore" Version="8.0.0" />
+		<PackageVersion Include="Serilog.Sinks.Console" Version="5.0.1" />
+
+		<PackageVersion Include="MediatR" Version="12.1.1" />
+		<PackageVersion Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="12.1.1" />
+
+		<PackageVersion Include="FluentValidation" Version="11.9.0" />
+		<PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
+
+		<PackageVersion Include="MassTransit" Version="8.1.2" />
+		<PackageVersion Include="MassTransit.AspNetCore" Version="8.1.2" />
+		<PackageVersion Include="RabbitMQ.Client" Version="6.7.0" />
+
+		<PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.1" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.1" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.1" />
+		<PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
+
+		<PackageVersion Include="OpenTelemetry" Version="1.8.1" />
+		<PackageVersion Include="OpenTelemetry.Exporter.Jaeger" Version="1.8.1" />
+		<PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.8.1" />
+
+		<PackageVersion Include="Elasticsearch.Net" Version="8.12.0" />
+		<PackageVersion Include="Nest" Version="8.12.0" />
+
+		<PackageVersion Include="Microsoft.ML" Version="3.0.1" />
+		<PackageVersion Include="Microsoft.ML.FastTree" Version="3.0.1" />
+
+		<PackageVersion Include="Polly" Version="8.2.0" />
+
+	</ItemGroup>
+</Project>
