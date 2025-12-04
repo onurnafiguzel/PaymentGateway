@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 
 		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
@@ -41,6 +41,8 @@
 		<PackageVersion Include="Microsoft.ML.FastTree" Version="3.0.1" />
 
 		<PackageVersion Include="Polly" Version="8.2.0" />
+
+		<PackageVersion Include="Microsoft.Extensions.Http" Version="8.0.0" />
 
 	</ItemGroup>
 </Project>

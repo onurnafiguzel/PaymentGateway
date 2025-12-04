@@ -2,36 +2,45 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PaymentOrchestrator.Domain.Payments;
 
-namespace PaymentOrchestrator.Infrastructure.Persistence.Configurations;
+namespace PaymentOrchestrator.Infrastructure.Configurations;
 
-public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
+public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 {
     public void Configure(EntityTypeBuilder<Payment> builder)
     {
-        builder.ToTable("payments");
+        builder.ToTable("Payments");
 
         builder.HasKey(p => p.Id);
+
+        builder.Property(p => p.Id)
+            .ValueGeneratedOnAdd();
 
         builder.Property(p => p.MerchantId)
             .IsRequired()
             .HasMaxLength(100);
 
         builder.Property(p => p.Amount)
-            .HasPrecision(18, 2)
-            .IsRequired();
+            .IsRequired()
+            .HasColumnType("numeric(18,2)");
 
         builder.Property(p => p.Currency)
             .IsRequired()
             .HasMaxLength(3);
 
         builder.Property(p => p.Status)
-            .HasConversion<int>() // enum -> int
+            .HasConversion<int>()
             .IsRequired();
+
+        builder.Property(p => p.ProviderTransactionId)
+            .HasMaxLength(200);
+
+        builder.Property(p => p.FailureReason)
+            .HasMaxLength(500);
 
         builder.Property(p => p.CreatedAt)
             .IsRequired();
 
-        builder.Property(p => p.UpdatedAt);
+        builder.Property(p => p.UpdatedAt)
+            .IsRequired(false);
     }
 }
-

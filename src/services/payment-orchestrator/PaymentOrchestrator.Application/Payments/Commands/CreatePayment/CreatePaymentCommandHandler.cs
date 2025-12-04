@@ -1,14 +1,17 @@
 ﻿using MediatR;
 using PaymentOrchestrator.Application.Abstractions;
+using PaymentOrchestrator.Application.Common.Events;
 using PaymentOrchestrator.Application.Persistence;
 using PaymentOrchestrator.Domain.Payments;
 using Shared.Kernel.Domain.Results;
+using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Commands.CreatePayment;
 
 public sealed class CreatePaymentCommandHandler(
     IPaymentRepository paymentRepository,
-    IUnitOfWork unitOfWork
+    IUnitOfWork unitOfWork,
+    IEventBus eventBus
 ) : IRequestHandler<CreatePaymentCommand, Result<int>>
 {
     public async Task<Result<int>> Handle(
@@ -32,6 +35,17 @@ public sealed class CreatePaymentCommandHandler(
 
         // 3) UoW → Commit
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // 1️⃣ PaymentCreatedEvent publish
+        var @event = new PaymentCreatedEvent(
+            payment.Id,
+            payment.MerchantId,
+            payment.Amount,
+            payment.Currency,
+            payment.CreatedAt
+        );
+
+        await eventBus.PublishAsync(@event, cancellationToken);
 
         // 4) OK → Payment Id döneriz
         return Result<int>.Success(payment.Id);
