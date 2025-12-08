@@ -1,4 +1,5 @@
 ﻿using PaymentOrchestrator.Application.Payments.Services;
+using Shared.Contracts.Providers;
 using System.Net.Http.Json;
 
 public class PaymentInitiator(HttpClient http) : IPaymentInitiator

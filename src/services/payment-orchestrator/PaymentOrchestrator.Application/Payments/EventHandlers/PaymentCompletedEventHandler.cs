@@ -1,7 +1,7 @@
 ﻿using PaymentOrchestrator.Application.Abstractions;
-using PaymentOrchestrator.Application.Common.Events;
 using PaymentOrchestrator.Application.Persistence;
 using Shared.Contracts.Payments;
+using Shared.Messaging.Events.Common;
 
 namespace PaymentOrchestrator.Application.Payments.EventHandlers;
 

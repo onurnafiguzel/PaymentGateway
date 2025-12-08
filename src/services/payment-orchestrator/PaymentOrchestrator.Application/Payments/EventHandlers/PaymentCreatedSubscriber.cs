@@ -1,5 +1,6 @@
-﻿using PaymentOrchestrator.Application.Common.Events;
-using PaymentOrchestrator.Application.Payments.Services;
+﻿using PaymentOrchestrator.Application.Payments.Services;
+using Shared.Contracts.Providers;
+using Shared.Messaging.Events.Common;
 using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.EventHandlers;
@@ -16,6 +17,8 @@ public sealed class PaymentCreatedSubscriber
     {
         _providerSelector = providerSelector;
         _paymentInitiator = paymentInitiator;
+
+        Console.WriteLine("PaymentCreatedSubscriber: Subscribed!");
 
         eventBus.SubscribeAsync<PaymentCreatedEvent>(HandleAsync);
     }

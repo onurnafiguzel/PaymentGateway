@@ -13,9 +13,6 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
-        services.AddSingleton<FraudCheckSubscriber>();
-        services.AddSingleton<PaymentProviderSubscriber>();
-
         return services;
     }
 }

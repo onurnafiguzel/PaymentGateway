@@ -1,4 +1,6 @@
-﻿namespace PaymentOrchestrator.Application.Payments.Services;
+﻿using Shared.Contracts.Providers;
+
+namespace PaymentOrchestrator.Application.Payments.Services;
 
 public interface IPaymentInitiator
 {

@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using PaymentOrchestrator.Application.Abstractions;
-using PaymentOrchestrator.Application.Common.Events;
 using PaymentOrchestrator.Application.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
 using Shared.Contracts.Providers;
+using Shared.Messaging.Events.Common;
 using Shared.Messaging.Events.Fraud;
 
 namespace PaymentOrchestrator.Infrastructure.Subscribers;

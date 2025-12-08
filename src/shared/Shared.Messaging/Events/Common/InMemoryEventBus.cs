@@ -1,4 +1,4 @@
-﻿using PaymentOrchestrator.Application.Common.Events;
+﻿using Shared.Messaging.Events.Common;
 
 namespace PaymentOrchestrator.Infrastructure.Messaging;
 

@@ -1,4 +1,4 @@
-﻿namespace PaymentOrchestrator.Application.Common.Events;
+﻿namespace Shared.Messaging.Events.Common;
 
 public interface IEventBus
 {

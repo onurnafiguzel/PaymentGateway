@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Subscribers\" />
+	  <Folder Include="Messaging\" />
 	</ItemGroup>
 
 </Project>

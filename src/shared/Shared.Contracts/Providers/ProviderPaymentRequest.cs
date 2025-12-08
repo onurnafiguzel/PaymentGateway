@@ -1,4 +1,4 @@
-﻿namespace PaymentOrchestrator.Application.Payments.Services;
+﻿namespace Shared.Contracts.Providers;
 
 public record ProviderPaymentRequest(
     int PaymentId,

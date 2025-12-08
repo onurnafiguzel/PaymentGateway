@@ -1,42 +1,45 @@
-﻿using PaymentOrchestrator.Application.Abstractions;
-using PaymentOrchestrator.Application.Common.Events;
+﻿using Microsoft.Extensions.DependencyInjection;
+using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Persistence;
 using Shared.Contracts.Fraud;
+using Shared.Messaging.Events.Common;
 
 namespace PaymentOrchestrator.Application.Payments.EventHandlers;
 
 public sealed class FraudCheckSubscriber
 {
-    private readonly IPaymentRepository _paymentRepository;
-    private readonly IUnitOfWork _uow;
+    private readonly IServiceProvider _serviceProvider;
 
-    public FraudCheckSubscriber(
-        IPaymentRepository paymentRepository,
-        IUnitOfWork uow,
-        IEventBus eventBus)
+    public FraudCheckSubscriber(IEventBus eventBus, IServiceProvider serviceProvider)
     {
-        _paymentRepository = paymentRepository;
-        _uow = uow;
+        _serviceProvider = serviceProvider;
 
+        // Fraud eventlerini dinliyoruz
         eventBus.SubscribeAsync<FraudCheckCompletedEvent>(HandleAsync);
     }
 
     private async Task HandleAsync(FraudCheckCompletedEvent evt)
     {
-        // 1. Payment'ı DB’den bul
-        var payment = await _paymentRepository.GetByIdAsync(evt.PaymentId);
+        // Scoped yaşam alanı açılır (Request-scope gibi)
+        using var scope = _serviceProvider.CreateScope();
+
+        // Scoped repository ve UnitOfWork çözülür
+        var repo = scope.ServiceProvider.GetRequiredService<IPaymentRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+        // 1. Payment'ı bul
+        var payment = await repo.GetByIdAsync(evt.PaymentId);
         if (payment is null)
             return;
 
-        // 2. Fraud varsa Payment'ı işaretle
+        // 2. Fraud varsa işle
         if (evt.IsFraud)
         {
             payment.MarkAsFailed(evt.Reason ?? "fraud_detected");
-            await _uow.SaveChangesAsync();
+            await uow.SaveChangesAsync();
             return;
         }
 
-        // Fraud değilse şimdilik hiçbir şey yapmıyoruz
-        // Future: log, domain event, suspicious flag eklenebilir
+        // Fraud değilse: şimdilik hiçbir işlem yok (future: queue, log, saga step)
     }
 }

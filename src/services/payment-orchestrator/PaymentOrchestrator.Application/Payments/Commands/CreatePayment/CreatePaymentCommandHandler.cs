@@ -1,9 +1,9 @@
 ﻿using MediatR;
 using PaymentOrchestrator.Application.Abstractions;
-using PaymentOrchestrator.Application.Common.Events;
 using PaymentOrchestrator.Application.Persistence;
 using PaymentOrchestrator.Domain.Payments;
 using Shared.Kernel.Domain.Results;
+using Shared.Messaging.Events.Common;
 using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Commands.CreatePayment;
