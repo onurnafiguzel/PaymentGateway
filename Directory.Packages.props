@@ -14,6 +14,9 @@
 		<PackageVersion Include="Serilog" Version="3.1.1" />
 		<PackageVersion Include="Serilog.AspNetCore" Version="8.0.0" />
 		<PackageVersion Include="Serilog.Sinks.Console" Version="5.0.1" />
+		<PackageVersion Include="Serilog.Sinks.Elasticsearch" Version="8.4.1" />
+		<PackageVersion Include="Serilog.Enrichers.CorrelationId" Version="3.0.1" />
+
 
 		<PackageVersion Include="MediatR" Version="12.1.1" />
 
@@ -31,8 +34,13 @@
 		<PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.2" />
 
 		<PackageVersion Include="OpenTelemetry" Version="1.8.1" />
-		<PackageVersion Include="OpenTelemetry.Exporter.Jaeger" Version="1.8.1" />
 		<PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.8.1" />
+		<PackageVersion Include="OpenTelemetry.Trace" Version="1.8.1" />
+		<PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.1" />
+		<PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.8.1" />
+		<PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.8.1" />
+		<PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.0.0-rc.9" />
+
 
 		<PackageVersion Include="Elasticsearch.Net" Version="8.12.0" />
 		<PackageVersion Include="Nest" Version="8.12.0" />
@@ -43,6 +51,5 @@
 		<PackageVersion Include="Polly" Version="8.2.0" />
 
 		<PackageVersion Include="Microsoft.Extensions.Http" Version="8.0.0" />
-
 	</ItemGroup>
 </Project>

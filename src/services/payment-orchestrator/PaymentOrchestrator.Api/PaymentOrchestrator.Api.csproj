@@ -2,10 +2,22 @@
 	<ItemGroup>
 		<PackageReference Include="Swashbuckle.AspNetCore" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+
+		<PackageReference Include="OpenTelemetry" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
+
+		<PackageReference Include="Serilog.AspNetCore" />
+		<PackageReference Include="Serilog.Sinks.Elasticsearch" />
+		<PackageReference Include="Serilog.Enrichers.CorrelationId" />
+
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\PaymentOrchestrator.Application\PaymentOrchestrator.Application.csproj" />
-	  <ProjectReference Include="..\PaymentOrchestrator.Infrastructure\PaymentOrchestrator.Infrastructure.csproj" />
+		<ProjectReference Include="..\PaymentOrchestrator.Application\PaymentOrchestrator.Application.csproj" />
+		<ProjectReference Include="..\PaymentOrchestrator.Infrastructure\PaymentOrchestrator.Infrastructure.csproj" />
 	</ItemGroup>
 
 </Project>
