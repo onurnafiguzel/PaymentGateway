@@ -4,6 +4,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\Shared.Contracts\Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\shared\Shared.Kernel\Shared.Kernel.csproj" />
   </ItemGroup>
 
 </Project>

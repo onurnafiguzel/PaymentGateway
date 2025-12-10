@@ -1,2 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" />
+﻿<Project Sdk="Microsoft.NET.Sdk" >
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+
+		<!-- Serilog -->
+		<PackageReference Include="Serilog.AspNetCore" />
+		<PackageReference Include="Serilog.Sinks.Elasticsearch" />
+		<PackageReference Include="Serilog.Enrichers.CorrelationId" />
+	</ItemGroup>
+</Project>
 

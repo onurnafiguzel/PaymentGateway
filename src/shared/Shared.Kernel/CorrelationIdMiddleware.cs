@@ -1,6 +1,7 @@
-﻿using Serilog.Context;
+﻿using Microsoft.AspNetCore.Http;
+using Serilog.Context;
 
-namespace PaymentOrchestrator.Api.Mİddlewares;
+namespace Shared.Kernel;
 
 public sealed class CorrelationIdMiddleware : IMiddleware
 {

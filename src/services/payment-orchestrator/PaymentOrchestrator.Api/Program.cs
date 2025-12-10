@@ -1,6 +1,5 @@
 ﻿using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using PaymentOrchestrator.Api.Mİddlewares;
 using PaymentOrchestrator.Application;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Payments.EventHandlers;
@@ -13,6 +12,7 @@ using PaymentOrchestrator.Infrastructure.Providers;
 using PaymentOrchestrator.Infrastructure.Repositories;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
+using Shared.Kernel;
 using Shared.Messaging.Events.Common;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,17 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 // -------------------------------
 // Serilog Logging Configuration
 // -------------------------------
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .Enrich.WithCorrelationId()
-    .WriteTo.Console()
-    .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
-    {
-        AutoRegisterTemplate = true,
-        IndexFormat = "payment-orchestrator-logs"
-    })
-    .CreateLogger();
-
+ConfigureLogging();
 builder.Host.UseSerilog();
 
 // -------------------------------
@@ -103,7 +93,7 @@ builder.Services.AddOpenTelemetry()
             )
             .AddOtlpExporter(opt =>
             {
-                opt.Endpoint = new Uri("http://localhost:4317");
+                opt.Endpoint = new Uri("http://localhost:4317"); // jeager-collector
             });
     });
 
@@ -132,3 +122,20 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+
+void ConfigureLogging()
+{
+    Log.Logger = new LoggerConfiguration()
+        .Enrich.FromLogContext()
+        .Enrich.WithCorrelationId()
+        .WriteTo.Console()
+        .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
+        {
+            AutoRegisterTemplate = true,
+            IndexFormat = $"payment-logs-{DateTime.UtcNow:yyyy-MM}",
+            NumberOfReplicas = 1,
+            NumberOfShards = 2
+        })
+        .CreateLogger();
+}

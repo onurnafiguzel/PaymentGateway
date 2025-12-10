@@ -14,10 +14,13 @@
 		<PackageReference Include="Serilog.AspNetCore" />
 		<PackageReference Include="Serilog.Sinks.Elasticsearch" />
 		<PackageReference Include="Serilog.Enrichers.CorrelationId" />
+		<PackageReference Include="Serilog.Sinks.Console"/>
+		<PackageReference Include="Serilog.Enrichers.Environment" />
+
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Controllers\" />
+	  <ProjectReference Include="..\..\shared\Shared.Kernel\Shared.Kernel.csproj" />
 	</ItemGroup>
 
 </Project>

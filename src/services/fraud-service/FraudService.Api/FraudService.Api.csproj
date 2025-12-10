@@ -3,6 +3,12 @@
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" />
+	  <!-- Serilog -->
+	  <PackageReference Include="Serilog.AspNetCore" />
+	  <PackageReference Include="Serilog.Sinks.Elasticsearch" />
+	  <PackageReference Include="Serilog.Enrichers.CorrelationId" />
+	  <PackageReference Include="Serilog.Sinks.Console"/>
+	  <PackageReference Include="Serilog.Enrichers.Environment" />
   </ItemGroup>
 
 
