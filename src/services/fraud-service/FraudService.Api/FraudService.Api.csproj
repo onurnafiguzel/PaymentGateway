@@ -7,8 +7,13 @@
 	  <PackageReference Include="Serilog.AspNetCore" />
 	  <PackageReference Include="Serilog.Sinks.Elasticsearch" />
 	  <PackageReference Include="Serilog.Enrichers.CorrelationId" />
-	  <PackageReference Include="Serilog.Sinks.Console"/>
+	  <PackageReference Include="Serilog.Sinks.Console" />
 	  <PackageReference Include="Serilog.Enrichers.Environment" />
+
+	  <PackageReference Include="MassTransit" />
+	  <PackageReference Include="MassTransit.AspNetCore" />
+	  <PackageReference Include="RabbitMQ.Client" />
+	  <PackageReference Include="MassTransit.RabbitMQ" />
   </ItemGroup>
 
 

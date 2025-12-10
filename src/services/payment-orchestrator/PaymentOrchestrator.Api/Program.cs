@@ -1,19 +1,18 @@
-﻿using OpenTelemetry.Resources;
+﻿using MassTransit;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using PaymentOrchestrator.Application;
 using PaymentOrchestrator.Application.Abstractions;
-using PaymentOrchestrator.Application.Payments.EventHandlers;
+using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
 using PaymentOrchestrator.Infrastructure;
-using PaymentOrchestrator.Infrastructure.Messaging;
 using PaymentOrchestrator.Infrastructure.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
 using PaymentOrchestrator.Infrastructure.Repositories;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 using Shared.Kernel;
-using Shared.Messaging.Events.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,18 +34,6 @@ builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
 
-// -------------------------------
-// EVENT BUS
-// -------------------------------
-builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
-
-// -------------------------------
-// SUBSCRIBERS (Singleton)
-// IMPORTANT: They attach handlers inside constructor
-// -------------------------------
-builder.Services.AddSingleton<PaymentCreatedSubscriber>();
-builder.Services.AddSingleton<FraudCheckSubscriber>();
-//builder.Services.AddSingleton<ProviderPaymentSubscriber>();
 
 // -------------------------------
 // Provider Clients
@@ -97,6 +84,44 @@ builder.Services.AddOpenTelemetry()
             });
     });
 
+// MassTransit
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<PaymentCreatedConsumer>();
+    x.AddConsumer<FraudCheckCompletedConsumer>();
+    x.AddConsumer<ProviderInitiationConsumer>();
+    x.AddConsumer<PaymentCompletedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+
+        cfg.ReceiveEndpoint("payment-created-queue", e =>
+        {
+            e.ConfigureConsumer<PaymentCreatedConsumer>(context);
+        });
+
+        cfg.ReceiveEndpoint("fraud-completed-queue", e =>
+        {
+            e.ConfigureConsumer<FraudCheckCompletedConsumer>(context);
+        });
+
+        cfg.ReceiveEndpoint("provider-initiation-queue", e =>
+        {
+            e.ConfigureConsumer<ProviderInitiationConsumer>(context);
+        });
+
+        cfg.ReceiveEndpoint("payment-completed-queue", e =>
+        {
+            e.ConfigureConsumer<PaymentCompletedConsumer>(context);
+        });
+    });
+});
+
 var app = builder.Build();
 
 // -------------------------------
@@ -104,14 +129,6 @@ var app = builder.Build();
 // -------------------------------
 app.UseMiddleware<CorrelationIdMiddleware>();
 
-// -------------------------------
-// FORCE SUBSCRIBER INITIALIZATION
-// -------------------------------
-_ = app.Services.GetRequiredService<PaymentCreatedSubscriber>();
-_ = app.Services.GetRequiredService<FraudCheckSubscriber>();
-//_ = app.Services.GetRequiredService<ProviderPaymentSubscriber>();
-
-// -------------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

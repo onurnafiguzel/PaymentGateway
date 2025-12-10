@@ -1,9 +1,9 @@
 ﻿namespace Shared.Contracts.Payments;
 
-public record PaymentCompletedEvent(
+public record ProviderInitiationRequestedEvent(
     int PaymentId,
     string MerchantId,
     decimal Amount,
     string Currency,
-    string ProviderTransactionId
+    string ProviderName
 );

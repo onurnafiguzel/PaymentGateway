@@ -17,6 +17,11 @@
 		<PackageReference Include="Serilog.Sinks.Console"/>
 		<PackageReference Include="Serilog.Enrichers.Environment" />
 
+		<PackageReference Include="MassTransit" />
+		<PackageReference Include="MassTransit.AspNetCore"  />
+		<PackageReference Include="RabbitMQ.Client"  />
+		<PackageReference Include="MassTransit.RabbitMQ"  />
+
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\PaymentOrchestrator.Application\PaymentOrchestrator.Application.csproj" />

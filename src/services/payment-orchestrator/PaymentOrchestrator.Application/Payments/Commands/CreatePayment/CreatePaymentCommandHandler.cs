@@ -1,9 +1,9 @@
 ﻿using MediatR;
+using MassTransit;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Persistence;
 using PaymentOrchestrator.Domain.Payments;
 using Shared.Kernel.Domain.Results;
-using Shared.Messaging.Events.Common;
 using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Commands.CreatePayment;
@@ -11,14 +11,14 @@ namespace PaymentOrchestrator.Application.Payments.Commands.CreatePayment;
 public sealed class CreatePaymentCommandHandler(
     IPaymentRepository paymentRepository,
     IUnitOfWork unitOfWork,
-    IEventBus eventBus
+    IPublishEndpoint publishEndpoint
 ) : IRequestHandler<CreatePaymentCommand, Result<int>>
 {
     public async Task<Result<int>> Handle(
         CreatePaymentCommand request,
         CancellationToken cancellationToken)
     {
-        // 1) DDD Factory çağrısı
+        // 1) DDD factory
         var createResult = Payment.Create(
             request.MerchantId,
             request.Amount,
@@ -30,13 +30,11 @@ public sealed class CreatePaymentCommandHandler(
 
         var payment = createResult.Value!;
 
-        // 2) Repo → Add
+        // 2) DB add
         await paymentRepository.AddAsync(payment, cancellationToken);
-
-        // 3) UoW → Commit
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // 1️⃣ PaymentCreatedEvent publish
+        // 3) Publish payment created (MassTransit style)
         var @event = new PaymentCreatedEvent(
             payment.Id,
             payment.MerchantId,
@@ -45,9 +43,9 @@ public sealed class CreatePaymentCommandHandler(
             payment.CreatedAt
         );
 
-        await eventBus.PublishAsync(@event, cancellationToken);
+        await publishEndpoint.Publish(@event, cancellationToken);
 
-        // 4) OK → Payment Id döneriz
+        // 4) return id
         return Result<int>.Success(payment.Id);
     }
 }

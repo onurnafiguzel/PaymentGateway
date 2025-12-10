@@ -2,6 +2,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="MediatR" />
+		<PackageReference Include="MassTransit"/>
+
 		<ProjectReference Include="..\..\..\shared\Shared.Contracts\Shared.Contracts.csproj" />
 		<ProjectReference Include="..\..\..\shared\Shared.Kernel\Shared.Kernel.csproj" />
 		<ProjectReference Include="..\..\..\shared\Shared.Messaging\Shared.Messaging.csproj" />

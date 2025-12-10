@@ -2,5 +2,4 @@
 
 public record PaymentFailedEvent(
     int PaymentId,
-    string Reason,
-    DateTime FailedAt);
+    string Reason);

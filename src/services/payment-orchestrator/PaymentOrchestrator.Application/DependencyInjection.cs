@@ -1,7 +1,4 @@
-﻿using MediatR;
-using Microsoft.Extensions.DependencyInjection;
-using PaymentOrchestrator.Application.Payments.EventHandlers;
-using PaymentOrchestrator.Infrastructure.Subscribers;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 namespace PaymentOrchestrator.Application;

@@ -2,6 +2,8 @@
 
 public record FraudCheckCompletedEvent(
     int PaymentId,
+    string MerchantId,
+    decimal Amount,
     bool IsFraud,
-    string? Reason,
-    DateTime CheckedAt);
+    string? Reason
+);

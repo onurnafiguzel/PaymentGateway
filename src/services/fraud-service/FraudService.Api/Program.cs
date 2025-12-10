@@ -1,9 +1,8 @@
-using FraudService.Api.Subscriber;
-using PaymentOrchestrator.Infrastructure.Messaging;
+using FraudService.Application.Consumers;
+using MassTransit;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 using Shared.Kernel;
-using Shared.Messaging.Events.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,16 +16,31 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<FraudPaymentSubscriber>();
-builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
-
 builder.Services.AddTransient<CorrelationIdMiddleware>();
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<FraudCheckRequestedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+
+        cfg.ReceiveEndpoint("fraud-check-requested-queue", e =>
+        {
+            e.ConfigureConsumer<FraudCheckRequestedConsumer>(context);
+        });
+    });
+});
 
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 
-_ = app.Services.GetRequiredService<FraudPaymentSubscriber>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

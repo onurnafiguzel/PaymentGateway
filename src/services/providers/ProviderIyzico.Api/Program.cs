@@ -1,3 +1,5 @@
+using MassTransit;
+using ProviderIyzico.Application.Consumers;
 using Shared.Kernel;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +12,21 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddTransient<CorrelationIdMiddleware>();
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<ProviderInitiationRequestedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost");
+
+        cfg.ReceiveEndpoint("provider-initiation-queue", e =>
+        {
+            e.ConfigureConsumer<ProviderInitiationRequestedConsumer>(context);
+        });
+    });
+});
 
 var app = builder.Build();
 
