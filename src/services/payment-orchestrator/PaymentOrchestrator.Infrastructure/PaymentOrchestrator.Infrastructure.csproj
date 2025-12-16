@@ -7,6 +7,8 @@
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.Extensions.Http" />
+		<PackageReference Include="MassTransit.EntityFrameworkCore" />
+
 
 	</ItemGroup>
 
@@ -15,10 +17,6 @@
 	  <ProjectReference Include="..\..\..\shared\Shared.Messaging\Shared.Messaging.csproj" />
 	  <ProjectReference Include="..\PaymentOrchestrator.Application\PaymentOrchestrator.Application.csproj" />
 	  <ProjectReference Include="..\PaymentOrchestrator.Domain\PaymentOrchestrator.Domain.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Messaging\" />
 	</ItemGroup>
 
 </Project>

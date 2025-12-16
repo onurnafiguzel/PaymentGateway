@@ -1,5 +1,5 @@
 ﻿using MassTransit;
-using Shared.Contracts.Payments;
+using Shared.Messaging.Events.Payments;
 
 namespace ProviderPayTR.Consumers;
 

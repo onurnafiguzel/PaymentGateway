@@ -20,7 +20,7 @@ builder.Services.AddTransient<CorrelationIdMiddleware>();
 
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<FraudCheckRequestedConsumer>();
+    x.AddConsumer<StartFraudCheckConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -32,7 +32,7 @@ builder.Services.AddMassTransit(x =>
 
         cfg.ReceiveEndpoint("fraud-check-requested-queue", e =>
         {
-            e.ConfigureConsumer<FraudCheckRequestedConsumer>(context);
+            e.ConfigureConsumer<StartFraudCheckConsumer>(context);
         });
     });
 });

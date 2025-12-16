@@ -1,5 +1,5 @@
-﻿using MediatR;
-using MassTransit;
+﻿using MassTransit;
+using MediatR;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Persistence;
 using PaymentOrchestrator.Domain.Payments;
@@ -10,8 +10,8 @@ namespace PaymentOrchestrator.Application.Payments.Commands.CreatePayment;
 
 public sealed class CreatePaymentCommandHandler(
     IPaymentRepository paymentRepository,
-    IUnitOfWork unitOfWork,
-    IPublishEndpoint publishEndpoint
+    IPublishEndpoint publishEndpoint,
+    IUnitOfWork unitOfWork
 ) : IRequestHandler<CreatePaymentCommand, Result<int>>
 {
     public async Task<Result<int>> Handle(
@@ -32,20 +32,23 @@ public sealed class CreatePaymentCommandHandler(
 
         // 2) DB add
         await paymentRepository.AddAsync(payment, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // 3) Publish payment created (MassTransit style)
-        var @event = new PaymentCreatedEvent(
+        // 3) Publish event (EF Outbox'a yazılır, RabbitMQ'ya hemen gitmez)
+        await publishEndpoint.Publish(new PaymentCreatedEvent(
             payment.Id,
             payment.MerchantId,
             payment.Amount,
             payment.Currency,
             payment.CreatedAt
-        );
+        ),
+        context =>
+        {
+            context.CorrelationId = Guid.NewGuid();
+        });
 
-        await publishEndpoint.Publish(@event, cancellationToken);
+        // 4) Atomic commit (Payment + OutboxMessage)
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // 4) return id
         return Result<int>.Success(payment.Id);
     }
 }

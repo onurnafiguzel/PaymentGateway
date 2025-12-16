@@ -1,6 +1,6 @@
-﻿namespace Shared.Contracts.Payments;
+﻿namespace Shared.Messaging.Events.Payments;
 
-public record PaymentCompletedEvent(
+public sealed record PaymentCompletedEvent(
     int PaymentId,
     string MerchantId,
     decimal Amount,

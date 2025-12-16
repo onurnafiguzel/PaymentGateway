@@ -18,7 +18,7 @@
 		<PackageReference Include="Serilog.Enrichers.Environment" />
 
 		<PackageReference Include="MassTransit" />
-		<PackageReference Include="MassTransit.AspNetCore"  />
+		<PackageReference Include="MassTransit.EntityFrameworkCore" />
 		<PackageReference Include="RabbitMQ.Client"  />
 		<PackageReference Include="MassTransit.RabbitMQ"  />
 

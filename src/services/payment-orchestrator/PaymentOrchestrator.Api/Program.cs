@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using PaymentOrchestrator.Application;
@@ -6,6 +7,7 @@ using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
+using PaymentOrchestrator.Application.Sagas.Payment;
 using PaymentOrchestrator.Infrastructure;
 using PaymentOrchestrator.Infrastructure.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
@@ -56,6 +58,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // -------------------------------
 builder.Services.AddTransient<CorrelationIdMiddleware>();
 
+
 // -------------------------------
 // OPEN TELEMETRY TRACING
 // -------------------------------
@@ -84,14 +87,54 @@ builder.Services.AddOpenTelemetry()
             });
     });
 
+var connectionString = builder.Configuration.GetConnectionString("PaymentDb")
+                   ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 // MassTransit
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<PaymentCreatedConsumer>();
+    // ---------- CONSUMERS ----------
     x.AddConsumer<FraudCheckCompletedConsumer>();
     x.AddConsumer<ProviderInitiationConsumer>();
     x.AddConsumer<PaymentCompletedConsumer>();
 
+    // ---------- SAGA ----------
+    x.AddSagaStateMachine<PaymentStateMachine, PaymentState>()
+        .EntityFrameworkRepository(r =>
+        {
+            r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+
+            r.AddDbContext<DbContext, PaymentDbContext>((provider, cfg) =>
+            {
+                cfg.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
+            });
+        });
+
+    // ---------- EF OUTBOX ----------
+    x.AddEntityFrameworkOutbox<PaymentDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
+
+    // ---------- RETRY + DELAYED ----------
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseDelayedRedelivery(r =>
+        {
+            r.Intervals(
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMinutes(5));
+        });
+
+        cfg.UseMessageRetry(r =>
+        {
+            r.Immediate(3);
+        });
+    });
+
+    // ---------- RABBITMQ ----------
     x.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host("localhost", "/", h =>
@@ -100,27 +143,10 @@ builder.Services.AddMassTransit(x =>
             h.Password("guest");
         });
 
-        cfg.ReceiveEndpoint("payment-created-queue", e =>
-        {
-            e.ConfigureConsumer<PaymentCreatedConsumer>(context);
-        });
-
-        cfg.ReceiveEndpoint("fraud-completed-queue", e =>
-        {
-            e.ConfigureConsumer<FraudCheckCompletedConsumer>(context);
-        });
-
-        cfg.ReceiveEndpoint("provider-initiation-queue", e =>
-        {
-            e.ConfigureConsumer<ProviderInitiationConsumer>(context);
-        });
-
-        cfg.ReceiveEndpoint("payment-completed-queue", e =>
-        {
-            e.ConfigureConsumer<PaymentCompletedConsumer>(context);
-        });
+        cfg.ConfigureEndpoints(context);
     });
 });
+
 
 var app = builder.Build();
 

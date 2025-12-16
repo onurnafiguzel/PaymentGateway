@@ -1,8 +1,8 @@
 ﻿using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using PaymentOrchestrator.Application.Payments.Services;
-using Shared.Contracts.Payments;
 using Shared.Contracts.Providers;
+using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Consumers;
 
