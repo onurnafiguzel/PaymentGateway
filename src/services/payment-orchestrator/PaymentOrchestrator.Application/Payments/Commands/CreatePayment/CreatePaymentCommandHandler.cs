@@ -34,13 +34,16 @@ public sealed class CreatePaymentCommandHandler(
         await paymentRepository.AddAsync(payment, cancellationToken);
 
         // 3) Publish event (EF Outbox'a yazılır, RabbitMQ'ya hemen gitmez)
-        await publishEndpoint.Publish(new PaymentCreatedEvent(
-            payment.Id,
-            payment.MerchantId,
-            payment.Amount,
-            payment.Currency,
-            payment.CreatedAt
-        ));
+        var correlationId = Guid.NewGuid();
+        await publishEndpoint.Publish(new PaymentCreatedEvent
+        {
+            CorrelationId = correlationId,
+            PaymentId = payment.Id,
+            MerchantId = payment.MerchantId,
+            Amount = payment.Amount,
+            Currency = payment.Currency,
+            CreatedAt = payment.CreatedAt
+        });
 
         // 4) Atomic commit (Payment + OutboxMessage)
         await unitOfWork.SaveChangesAsync(cancellationToken);

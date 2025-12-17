@@ -6,7 +6,6 @@ using OpenTelemetry.Trace;
 using PaymentOrchestrator.Application;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Common.Observabilitiy;
-using PaymentOrchestrator.Application.Consumers.Monitoring;
 using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
@@ -109,7 +108,8 @@ builder.Services.AddOpenTelemetry()
             .AddOtlpExporter(opt =>
             {
                 opt.Endpoint = new Uri("http://localhost:4317");
-            });
+            })
+            .AddPrometheusExporter();
     });
 
 var connectionString = builder.Configuration.GetConnectionString("PaymentDb")
@@ -122,7 +122,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<FraudCheckCompletedConsumer>();
     x.AddConsumer<ProviderInitiationConsumer>();
     x.AddConsumer<PaymentCompletedConsumer>();
-    x.AddConsumer(typeof(FaultConsumer<>));
+    //x.AddConsumer(typeof(FaultConsumer<>));
 
 
     // ---------- SAGA ----------
@@ -133,7 +133,7 @@ builder.Services.AddMassTransit(x =>
 
             r.AddDbContext<DbContext, PaymentDbContext>((provider, cfg) =>
             {
-                cfg.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
+                cfg.UseNpgsql(builder.Configuration.GetConnectionString("PaymentDb"));
             });
         });
 
@@ -164,10 +164,10 @@ builder.Services.AddMassTransit(x =>
     // ---------- RABBITMQ ----------
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("localhost", "/", h =>
+        cfg.Host("rabbitmq", "/", h =>
         {
-            h.Username("guest");
-            h.Password("guest");
+            h.Username("admin");
+            h.Password("admin");
         });
 
         cfg.ConnectPublishObserver(
@@ -177,8 +177,13 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
+builder.Services.AddSingleton<CorrelationIdPublishObserver>();
+
 
 var app = builder.Build();
+
+app.MapPrometheusScrapingEndpoint();
+//app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
 // -------------------------------
 // MIDDLEWARE PIPELINE

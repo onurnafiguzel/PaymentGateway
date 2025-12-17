@@ -23,6 +23,7 @@ public class FraudCheckCompletedConsumer(
             payment.MarkAsFailed(evt.Reason ?? "fraud_detected");
 
             await publishEndpoint.Publish(new PaymentFailedEvent(
+                evt.CorrelationId,
                 payment.Id,
                 evt.Reason ?? "fraud_detected"
                 ));

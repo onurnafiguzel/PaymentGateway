@@ -1,4 +1,12 @@
 <Solution>
+  <Folder Name="/monitoring/" />
+  <Folder Name="/monitoring/alertmanager/">
+    <File Path="alertmanager.yml" />
+  </Folder>
+  <Folder Name="/monitoring/prometheus/">
+    <File Path="prometheus-alerts-payment.yml" />
+    <File Path="prometheus.yml" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />

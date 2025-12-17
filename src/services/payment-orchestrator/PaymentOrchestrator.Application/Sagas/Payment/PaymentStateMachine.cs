@@ -28,58 +28,69 @@ public sealed class PaymentStateMachine
 
         InstanceState(x => x.CurrentState);
 
-        // -------- CORRELATION --------
+        // -------------------------------------------------
+        // CORRELATION (🔥 EN KRİTİK DÜZELTME)
+        // -------------------------------------------------
         Event(() => PaymentCreated, x =>
         {
-            x.CorrelateById(ctx => ctx.CorrelationId!.Value);
+            x.CorrelateById(ctx => ctx.Message.CorrelationId);
+            x.SelectId(ctx => ctx.Message.CorrelationId);
             x.InsertOnInitial = true;
         });
 
         Event(() => FraudCheckCompleted,
-            x => x.CorrelateById(ctx => ctx.CorrelationId!.Value));
+            x => x.CorrelateById(ctx => ctx.Message.CorrelationId));
 
         Event(() => PaymentCompleted,
-            x => x.CorrelateById(ctx => ctx.CorrelationId!.Value));
+            x => x.CorrelateById(ctx => ctx.Message.CorrelationId));
 
-        // -------- SCHEDULE CONFIG --------
+        // -------------------------------------------------
+        // SCHEDULE CONFIG (CorrelationId FIX)
+        // -------------------------------------------------
         Schedule(() => FraudTimeout, x => x.FraudTimeoutTokenId, s =>
         {
             s.Delay = TimeSpan.FromMinutes(2);
-            s.Received = e => e.CorrelateById(ctx => ctx.CorrelationId!.Value);
+            s.Received = e => e.CorrelateById(ctx => ctx.Message.CorrelationId);
         });
 
         Schedule(() => ProviderTimeout, x => x.ProviderTimeoutTokenId, s =>
         {
             s.Delay = TimeSpan.FromMinutes(5);
-            s.Received = e => e.CorrelateById(ctx => ctx.CorrelationId!.Value);
+            s.Received = e => e.CorrelateById(ctx => ctx.Message.CorrelationId);
         });
 
-        // -------- INITIAL --------
+        // -------------------------------------------------
+        // INITIAL (Saga burada BAŞLAR)
+        // -------------------------------------------------
         Initially(
             When(PaymentCreated)
                 .Then(ctx =>
                 {
+                    ctx.Instance.CorrelationId = ctx.Message.CorrelationId;
                     ctx.Instance.PaymentId = ctx.Message.PaymentId;
                     ctx.Instance.MerchantId = ctx.Message.MerchantId;
                     ctx.Instance.Amount = ctx.Message.Amount;
                     ctx.Instance.Currency = ctx.Message.Currency;
                     ctx.Instance.CreatedAt = ctx.Message.CreatedAt;
 
-                    LogTransition(
-                        ctx,
-                        from: "INITIAL",
-                        to: nameof(FraudChecking));
+                    LogTransition(ctx, "INITIAL", nameof(FraudChecking));
                 })
-                .Schedule(FraudTimeout, _ => new FraudTimeoutExpiredEvent())
+                .Schedule(FraudTimeout, ctx => new FraudTimeoutExpiredEvent
+                {
+                    CorrelationId = ctx.Instance.CorrelationId
+                })
                 .TransitionTo(FraudChecking)
                 .Publish(ctx => new StartFraudCheckEvent(
+                    ctx.Instance.CorrelationId,
                     ctx.Instance.PaymentId,
                     ctx.Instance.MerchantId,
                     ctx.Instance.Amount,
                     ctx.Instance.Currency))
         );
 
-        // -------- FRAUD CHECKING --------
+        // -------------------------------------------------
+        // FRAUD CHECKING
+        // -------------------------------------------------
         During(FraudChecking,
             When(FraudCheckCompleted)
                 .Unschedule(FraudTimeout)
@@ -89,26 +100,25 @@ public sealed class PaymentStateMachine
                         .Then(ctx =>
                         {
                             RecordDuration(ctx, "failed_fraud");
-                            LogTransition(
-                                ctx,
-                                from: nameof(FraudChecking),
-                                to: nameof(Completed));
+                            LogTransition(ctx, nameof(FraudChecking), nameof(Completed));
                         })
                         .TransitionTo(Completed)
                         .Publish(ctx => new PaymentFailedEvent(
+                            ctx.Instance.CorrelationId,
                             ctx.Instance.PaymentId,
                             ctx.Message.Reason ?? "FRAUD_DETECTED")),
                     clean => clean
                         .Then(ctx =>
                         {
-                            LogTransition(
-                                ctx,
-                                from: nameof(FraudChecking),
-                                to: nameof(ProviderInitiated));
+                            LogTransition(ctx, nameof(FraudChecking), nameof(ProviderInitiated));
                         })
-                        .Schedule(ProviderTimeout, _ => new ProviderTimeoutExpiredEvent())
+                        .Schedule(ProviderTimeout, ctx => new ProviderTimeoutExpiredEvent
+                        {
+                            CorrelationId = ctx.Instance.CorrelationId
+                        })
                         .TransitionTo(ProviderInitiated)
                         .Publish(ctx => new ProviderInitiationRequestedEvent(
+                            ctx.Instance.CorrelationId,
                             ctx.Instance.PaymentId,
                             ctx.Instance.MerchantId,
                             ctx.Instance.Amount,
@@ -117,22 +127,23 @@ public sealed class PaymentStateMachine
                 )
         );
 
-        // -------- PROVIDER --------
+        // -------------------------------------------------
+        // PROVIDER
+        // -------------------------------------------------
         During(ProviderInitiated,
             When(PaymentCompleted)
+                .Unschedule(ProviderTimeout)
                 .Then(ctx =>
                 {
                     RecordDuration(ctx, "completed");
-                    LogTransition(
-                        ctx,
-                        from: nameof(ProviderInitiated),
-                        to: nameof(Completed));
+                    LogTransition(ctx, nameof(ProviderInitiated), nameof(Completed));
                 })
-                .Unschedule(ProviderTimeout)
                 .TransitionTo(Completed)
         );
 
-        // -------- FRAUD TIMEOUT --------
+        // -------------------------------------------------
+        // FRAUD TIMEOUT
+        // -------------------------------------------------
         During(FraudChecking,
             When(FraudTimeout.Received)
                 .Then(ctx =>
@@ -141,15 +152,18 @@ public sealed class PaymentStateMachine
                     _logger.LogWarning(
                         "Fraud timeout | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
                         ctx.Instance.PaymentId,
-                        ctx.CorrelationId);
+                        ctx.Instance.CorrelationId);
                 })
                 .TransitionTo(Completed)
                 .Publish(ctx => new PaymentFailedEvent(
+                    ctx.Instance.CorrelationId,
                     ctx.Instance.PaymentId,
                     "FRAUD_TIMEOUT"))
         );
 
-        // -------- PROVIDER TIMEOUT --------
+        // -------------------------------------------------
+        // PROVIDER TIMEOUT
+        // -------------------------------------------------
         During(ProviderInitiated,
             When(ProviderTimeout.Received)
                 .Then(ctx =>
@@ -158,10 +172,11 @@ public sealed class PaymentStateMachine
                     _logger.LogWarning(
                         "Provider timeout | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
                         ctx.Instance.PaymentId,
-                        ctx.CorrelationId);
+                        ctx.Instance.CorrelationId);
                 })
                 .TransitionTo(Completed)
                 .Publish(ctx => new PaymentFailedEvent(
+                    ctx.Instance.CorrelationId,
                     ctx.Instance.PaymentId,
                     "PROVIDER_TIMEOUT"))
         );
@@ -173,16 +188,16 @@ public sealed class PaymentStateMachine
         string to)
     {
         _logger.LogInformation(
-            "Payment saga state transition | PaymentId={PaymentId} | {FromState} -> {ToState} | CorrelationId={CorrelationId}",
+            "Payment saga transition | PaymentId={PaymentId} | {From} -> {To} | CorrelationId={CorrelationId}",
             ctx.Instance.PaymentId,
             from,
             to,
-            ctx.CorrelationId);
+            ctx.Instance.CorrelationId);
     }
 
     private void RecordDuration(
-    BehaviorContext<PaymentState> ctx,
-    string outcome)
+        BehaviorContext<PaymentState> ctx,
+        string outcome)
     {
         var durationSeconds =
             (DateTime.UtcNow - ctx.Instance.CreatedAt).TotalSeconds;
@@ -190,7 +205,6 @@ public sealed class PaymentStateMachine
         PaymentMetrics.PaymentDurationSeconds.Record(
             durationSeconds,
             new KeyValuePair<string, object?>("outcome", outcome),
-            new KeyValuePair<string, object?>("payment_id", ctx.Instance.PaymentId)
-        );
+            new KeyValuePair<string, object?>("payment_id", ctx.Instance.PaymentId));
     }
 }

@@ -1,38 +1,40 @@
 version: "3.9"
+
+networks:
+  payment-network:
+    driver: bridge
+
+volumes:
+  elastic-data:
+  rabbitmq_data:
+  postgres-data:
+
 services:
-  jaeger:
-    image: jaegertracing/all-in-one:1.45
-    ports:
-      - "16686:16686"     
-      - "4317:4317"       
-      - "4318:4318"       
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
 
-  elasticsearch:
-    container_name: els
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+  # ---------------------------
+  # PAYMENT ORCHESTRATOR API
+  # ---------------------------
+  payment-orchestrator-api:
+    build:
+      context: .
+      dockerfile: src/services/payment-orchestrator/PaymentOrchestrator.Api/Dockerfile
+    container_name: payment-orchestrator-api
     ports:
-      - 9200:9200
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
+      - "5000:8080"
     environment:
-      - xpack.security.enabled=false
-      - discovery.type=single-node
-    networks:
-      - elastic
-
-  kibana:
-    container_name: kibana
-    image: docker.elastic.co/kibana/kibana:8.12.0
-    ports:
-      - 5601:5601
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PaymentDb: "Host=postgres;Port=5432;Database=paymentdb;Username=postgres;Password=postgres"
     depends_on:
-      - elasticsearch
-    environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - rabbitmq
+      - postgres
+      - jaeger
     networks:
-      - elastic
+      - payment-network
+
+
+  # ---------------------------
+  # RABBITMQ
+  # ---------------------------
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -47,12 +49,95 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - elastic
+      - payment-network
+  
+  # ---------------------------
+  # POSTGRES
+  # ---------------------------
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: paymentdb
+    ports:
+      - "5432:5432"
+    networks:
+      - payment-network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
 
-networks:
-  elastic:
-    driver: bridge
 
-volumes:
-  elasticsearch-data:
-  rabbitmq_data:
+  # ---------------------------
+  # ELASTICSEARCH
+  # ---------------------------
+  elasticsearch:
+    container_name: els
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    ports:
+      - 9200:9200
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    networks:
+      - payment-network
+
+
+  # ---------------------------
+  # KIBANA
+  # ---------------------------
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    networks:
+      - payment-network
+
+
+  # ---------------------------
+  # JAEGER
+  # ---------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.45
+    ports:
+      - "16686:16686"     
+      - "4317:4317"     
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - payment-network
+
+
+  # ---------------------------
+  # PROMETHEUS
+  # ---------------------------
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus-alerts-payment.yml:/etcprometheusprometheus-alerts-payment.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - payment-orchestrator-api
+
+  # ---------------------------
+  # ALERTMANAGER
+  # ---------------------------   
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"     
+    networks:
+      - payment-network

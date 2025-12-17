@@ -1,0 +1,48 @@
+groups:
+- name: payment-alerts
+  rules:
+
+  # FRAUD TIMEOUT
+  - alert: PaymentFraudTimeoutHigh
+    expr: |
+      sum(rate(payment_duration_seconds_count{outcome="timeout_fraud"}[5m]))
+      /
+      sum(rate(payment_duration_seconds_count[5m]))
+      > 0.05
+    for: 2m
+    labels:
+      severity: critical
+      service: payment
+    annotations:
+      summary: "High fraud timeout rate"
+      description: "Fraud timeout rate exceeded 5% in the last 5 minutes."
+
+  # PROVIDER TIMEOUT
+  - alert: PaymentProviderTimeoutHigh
+    expr: |
+      sum(rate(payment_duration_seconds_count{outcome="timeout_provider"}[5m]))
+      /
+      sum(rate(payment_duration_seconds_count[5m]))
+      > 0.05
+    for: 2m
+    labels:
+      severity: critical
+      service: payment
+    annotations:
+      summary: "High provider timeout rate"
+      description: "Provider timeout rate exceeded 5% in the last 5 minutes."
+
+  # SLA (P95 > 5s)
+  - alert: PaymentDurationSlaBreached
+    expr: |
+      histogram_quantile(
+        0.95,
+        sum(rate(payment_duration_seconds_bucket[5m])) by (le)
+      ) > 5
+    for: 3m
+    labels:
+      severity: warning
+      service: payment
+    annotations:
+      summary: "Payment SLA breached"
+      description: "95th percentile payment duration exceeded 5 seconds."

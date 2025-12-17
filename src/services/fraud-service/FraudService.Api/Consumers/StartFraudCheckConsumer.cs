@@ -17,6 +17,7 @@ public sealed class StartFraudCheckConsumer
         string? reason = isFraud ? "High amount fraud suspicion" : null;
 
         await context.Publish(new FraudCheckCompletedEvent(
+            evt.CorrelationId,
             evt.PaymentId,
             isFraud,
             reason,

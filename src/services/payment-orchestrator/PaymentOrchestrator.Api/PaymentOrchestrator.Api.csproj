@@ -1,5 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+	<PropertyGroup>
+	  <UserSecretsId>0b34fd3b-cd78-4a74-885e-2572da9590e3</UserSecretsId>
+	  <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	  <DockerfileContext>..\..\..\..</DockerfileContext>
+	</PropertyGroup>
 	<ItemGroup>
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
 		<PackageReference Include="Swashbuckle.AspNetCore" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 
@@ -9,21 +15,25 @@
 		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.Http" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
+		<PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" />
+
 
 		<!-- Serilog -->
 		<PackageReference Include="Serilog.AspNetCore" />
 		<PackageReference Include="Serilog.Sinks.Elasticsearch" />
 		<PackageReference Include="Serilog.Enrichers.CorrelationId" />
-		<PackageReference Include="Serilog.Sinks.Console"/>
+		<PackageReference Include="Serilog.Sinks.Console" />
 		<PackageReference Include="Serilog.Enrichers.Environment" />
 
 		<PackageReference Include="MassTransit" />
 		<PackageReference Include="MassTransit.EntityFrameworkCore" />
-		<PackageReference Include="RabbitMQ.Client"  />
-		<PackageReference Include="MassTransit.RabbitMQ"  />
+		<PackageReference Include="RabbitMQ.Client" />
+		<PackageReference Include="MassTransit.RabbitMQ" />
 
 	</ItemGroup>
 	<ItemGroup>
+		<ProjectReference Include="..\..\..\shared\Shared.Contracts\Shared.Contracts.csproj" />
+		<ProjectReference Include="..\..\..\shared\Shared.Kernel\Shared.Kernel.csproj" />
 		<ProjectReference Include="..\PaymentOrchestrator.Application\PaymentOrchestrator.Application.csproj" />
 		<ProjectReference Include="..\PaymentOrchestrator.Infrastructure\PaymentOrchestrator.Infrastructure.csproj" />
 	</ItemGroup>

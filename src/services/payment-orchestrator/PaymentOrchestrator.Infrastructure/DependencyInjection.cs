@@ -12,7 +12,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("PaymentDb")
-                               ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                               ?? throw new InvalidOperationException("Connection string 'PaymentDb' not found.");
 
         services.AddDbContext<PaymentDbContext>(options =>
         {

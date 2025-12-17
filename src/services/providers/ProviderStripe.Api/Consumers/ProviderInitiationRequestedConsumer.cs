@@ -17,6 +17,7 @@ public class ProviderInitiationRequestedConsumer : IConsumer<ProviderInitiationR
         var providerTransactionId = Guid.NewGuid().ToString();
 
         await context.Publish(new PaymentCompletedEvent(
+            evt.CorrelationId,
             evt.PaymentId,
             evt.MerchantId,
             evt.Amount,
