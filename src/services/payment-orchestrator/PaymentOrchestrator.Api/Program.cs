@@ -6,6 +6,7 @@ using OpenTelemetry.Trace;
 using PaymentOrchestrator.Application;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Common.Observabilitiy;
+using PaymentOrchestrator.Application.Consumers.Monitoring;
 using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
@@ -121,6 +122,8 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<FraudCheckCompletedConsumer>();
     x.AddConsumer<ProviderInitiationConsumer>();
     x.AddConsumer<PaymentCompletedConsumer>();
+    x.AddConsumer(typeof(FaultConsumer<>));
+
 
     // ---------- SAGA ----------
     x.AddSagaStateMachine<PaymentStateMachine, PaymentState>()
