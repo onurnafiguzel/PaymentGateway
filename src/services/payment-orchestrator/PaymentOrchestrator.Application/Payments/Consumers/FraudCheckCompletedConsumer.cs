@@ -25,11 +25,7 @@ public class FraudCheckCompletedConsumer(
             await publishEndpoint.Publish(new PaymentFailedEvent(
                 payment.Id,
                 evt.Reason ?? "fraud_detected"
-                ),
-            context =>
-            {
-                context.CorrelationId = Guid.NewGuid();
-            });
+                ));
         }
 
         await unitOfWork.SaveChangesAsync(context.CancellationToken);

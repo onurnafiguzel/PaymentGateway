@@ -9,6 +9,7 @@ using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
 using PaymentOrchestrator.Application.Sagas.Payment;
 using PaymentOrchestrator.Infrastructure;
+using PaymentOrchestrator.Infrastructure.Messaging;
 using PaymentOrchestrator.Infrastructure.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
 using PaymentOrchestrator.Infrastructure.Repositories;
@@ -142,6 +143,9 @@ builder.Services.AddMassTransit(x =>
             h.Username("guest");
             h.Password("guest");
         });
+
+        cfg.ConnectPublishObserver(
+            context.GetRequiredService<CorrelationIdPublishObserver>());
 
         cfg.ConfigureEndpoints(context);
     });

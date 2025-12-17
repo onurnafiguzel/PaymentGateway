@@ -40,11 +40,7 @@ public sealed class CreatePaymentCommandHandler(
             payment.Amount,
             payment.Currency,
             payment.CreatedAt
-        ),
-        context =>
-        {
-            context.CorrelationId = Guid.NewGuid();
-        });
+        ));
 
         // 4) Atomic commit (Payment + OutboxMessage)
         await unitOfWork.SaveChangesAsync(cancellationToken);
