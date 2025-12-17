@@ -23,7 +23,6 @@ public class PaymentDbContext : DbContext
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
 
-
         // Tüm IEntityTypeConfiguration<T> implementasyonlarını otomatik uygula
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PaymentDbContext).Assembly);
     }
