@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using Microsoft.Extensions.Logging;
+using PaymentOrchestrator.Application.Common.Observabilitiy;
 using Shared.Messaging.Events.Fraud;
 using Shared.Messaging.Events.Payments;
 
@@ -87,6 +88,7 @@ public sealed class PaymentStateMachine
                     fraud => fraud
                         .Then(ctx =>
                         {
+                            RecordDuration(ctx, "failed_fraud");
                             LogTransition(
                                 ctx,
                                 from: nameof(FraudChecking),
@@ -120,6 +122,7 @@ public sealed class PaymentStateMachine
             When(PaymentCompleted)
                 .Then(ctx =>
                 {
+                    RecordDuration(ctx, "completed");
                     LogTransition(
                         ctx,
                         from: nameof(ProviderInitiated),
@@ -134,6 +137,7 @@ public sealed class PaymentStateMachine
             When(FraudTimeout.Received)
                 .Then(ctx =>
                 {
+                    RecordDuration(ctx, "timeout_fraud");
                     _logger.LogWarning(
                         "Fraud timeout | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
                         ctx.Instance.PaymentId,
@@ -150,6 +154,7 @@ public sealed class PaymentStateMachine
             When(ProviderTimeout.Received)
                 .Then(ctx =>
                 {
+                    RecordDuration(ctx, "timeout_provider");
                     _logger.LogWarning(
                         "Provider timeout | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
                         ctx.Instance.PaymentId,
@@ -173,5 +178,19 @@ public sealed class PaymentStateMachine
             from,
             to,
             ctx.CorrelationId);
+    }
+
+    private void RecordDuration(
+    BehaviorContext<PaymentState> ctx,
+    string outcome)
+    {
+        var durationSeconds =
+            (DateTime.UtcNow - ctx.Instance.CreatedAt).TotalSeconds;
+
+        PaymentMetrics.PaymentDurationSeconds.Record(
+            durationSeconds,
+            new KeyValuePair<string, object?>("outcome", outcome),
+            new KeyValuePair<string, object?>("payment_id", ctx.Instance.PaymentId)
+        );
     }
 }

@@ -1,9 +1,11 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using PaymentOrchestrator.Application;
 using PaymentOrchestrator.Application.Abstractions;
+using PaymentOrchestrator.Application.Common.Observabilitiy;
 using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
@@ -85,6 +87,27 @@ builder.Services.AddOpenTelemetry()
             .AddOtlpExporter(opt =>
             {
                 opt.Endpoint = new Uri("http://localhost:4317"); // jeager-collector
+            });
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            // 🔥 Application katmanındaki Meter
+            .AddMeter(PaymentMetrics.MeterName)
+
+            // ASP.NET metrics (request duration vs.)
+            .AddAspNetCoreInstrumentation()
+
+            // HttpClient metrics
+            .AddHttpClientInstrumentation()
+
+            // İstersen EF Core metrics de eklenebilir
+            //.AddRuntimeInstrumentation()
+
+            // OTLP ile metrics export
+            .AddOtlpExporter(opt =>
+            {
+                opt.Endpoint = new Uri("http://localhost:4317");
             });
     });
 
