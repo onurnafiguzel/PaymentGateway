@@ -13,5 +13,9 @@ public sealed class PaymentState : SagaStateMachineInstance
     public decimal Amount { get; set; }
     public string Currency { get; set; } = default!;
 
+    // ---- TIMEOUT SCHEDULE IDS ----
+    public Guid? FraudTimeoutTokenId { get; set; }
+    public Guid? ProviderTimeoutTokenId { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }

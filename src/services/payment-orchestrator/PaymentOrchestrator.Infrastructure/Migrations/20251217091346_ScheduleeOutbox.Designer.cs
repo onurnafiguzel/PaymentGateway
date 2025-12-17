@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PaymentOrchestrator.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using PaymentOrchestrator.Infrastructure.Persistence;
 namespace PaymentOrchestrator.Infrastructure.Migrations
 {
     [DbContext(typeof(PaymentDbContext))]
-    partial class PaymentDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251217091346_ScheduleeOutbox")]
+    partial class ScheduleeOutbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,44 +193,6 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     b.HasIndex("Created");
 
                     b.ToTable("OutboxState");
-                });
-
-            modelBuilder.Entity("PaymentOrchestrator.Application.Sagas.Payment.PaymentState", b =>
-                {
-                    b.Property<Guid>("CorrelationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CurrentState")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("FraudTimeoutTokenId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("MerchantId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("PaymentId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("ProviderTimeoutTokenId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("CorrelationId");
-
-                    b.ToTable("PaymentStates");
                 });
 
             modelBuilder.Entity("PaymentOrchestrator.Domain.Payments.Payment", b =>
