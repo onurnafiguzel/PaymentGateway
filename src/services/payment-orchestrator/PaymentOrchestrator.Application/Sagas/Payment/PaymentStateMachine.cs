@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using Microsoft.Extensions.Logging;
 using Shared.Messaging.Events.Fraud;
 using Shared.Messaging.Events.Payments;
 
@@ -7,6 +8,8 @@ namespace PaymentOrchestrator.Application.Sagas.Payment;
 public sealed class PaymentStateMachine
     : MassTransitStateMachine<PaymentState>
 {
+    private readonly ILogger<PaymentStateMachine> _logger;
+
     public State FraudChecking { get; private set; } = default!;
     public State ProviderInitiated { get; private set; } = default!;
     public State Completed { get; private set; } = default!;
@@ -15,46 +18,42 @@ public sealed class PaymentStateMachine
     public Event<FraudCheckCompletedEvent> FraudCheckCompleted { get; private set; } = default!;
     public Event<PaymentCompletedEvent> PaymentCompleted { get; private set; } = default!;
 
-    // ---- SCHEDULES ----
     public Schedule<PaymentState, FraudTimeoutExpiredEvent> FraudTimeout { get; private set; } = default!;
     public Schedule<PaymentState, ProviderTimeoutExpiredEvent> ProviderTimeout { get; private set; } = default!;
 
-
-    public PaymentStateMachine()
+    public PaymentStateMachine(ILogger<PaymentStateMachine> logger)
     {
+        _logger = logger;
+
         InstanceState(x => x.CurrentState);
 
-        // ---- Correlation (header-based) ----
+        // -------- CORRELATION --------
         Event(() => PaymentCreated, x =>
         {
             x.CorrelateById(ctx => ctx.CorrelationId!.Value);
             x.InsertOnInitial = true;
         });
 
-        Event(() => FraudCheckCompleted, x =>
-        {
-            x.CorrelateById(ctx => ctx.CorrelationId!.Value);
-        });
+        Event(() => FraudCheckCompleted,
+            x => x.CorrelateById(ctx => ctx.CorrelationId!.Value));
 
-        Event(() => PaymentCompleted, x =>
-        {
-            x.CorrelateById(ctx => ctx.CorrelationId!.Value);
-        });
+        Event(() => PaymentCompleted,
+            x => x.CorrelateById(ctx => ctx.CorrelationId!.Value));
 
         // -------- SCHEDULE CONFIG --------
-        Schedule(() => FraudTimeout, state => state.FraudTimeoutTokenId, s =>
+        Schedule(() => FraudTimeout, x => x.FraudTimeoutTokenId, s =>
         {
             s.Delay = TimeSpan.FromMinutes(2);
-            s.Received = x => x.CorrelateById(ctx => ctx.CorrelationId!.Value);
+            s.Received = e => e.CorrelateById(ctx => ctx.CorrelationId!.Value);
         });
 
-        Schedule(() => ProviderTimeout, state => state.ProviderTimeoutTokenId, s =>
+        Schedule(() => ProviderTimeout, x => x.ProviderTimeoutTokenId, s =>
         {
             s.Delay = TimeSpan.FromMinutes(5);
-            s.Received = x => x.CorrelateById(ctx => ctx.CorrelationId!.Value);
+            s.Received = e => e.CorrelateById(ctx => ctx.CorrelationId!.Value);
         });
 
-        // ---- INITIAL ----
+        // -------- INITIAL --------
         Initially(
             When(PaymentCreated)
                 .Then(ctx =>
@@ -64,51 +63,68 @@ public sealed class PaymentStateMachine
                     ctx.Instance.Amount = ctx.Message.Amount;
                     ctx.Instance.Currency = ctx.Message.Currency;
                     ctx.Instance.CreatedAt = ctx.Message.CreatedAt;
+
+                    LogTransition(
+                        ctx,
+                        from: "INITIAL",
+                        to: nameof(FraudChecking));
                 })
-                .Schedule(
-                    FraudTimeout,
-                    ctx => new FraudTimeoutExpiredEvent()
-                )
+                .Schedule(FraudTimeout, _ => new FraudTimeoutExpiredEvent())
                 .TransitionTo(FraudChecking)
                 .Publish(ctx => new StartFraudCheckEvent(
                     ctx.Instance.PaymentId,
                     ctx.Instance.MerchantId,
                     ctx.Instance.Amount,
-                    ctx.Instance.Currency
-                ))
+                    ctx.Instance.Currency))
         );
 
-        // ---- FRAUD CHECKING ----
+        // -------- FRAUD CHECKING --------
         During(FraudChecking,
             When(FraudCheckCompleted)
                 .Unschedule(FraudTimeout)
-                    .IfElse(
-                        ctx => ctx.Message.IsFraud,
-                        fraud => fraud
-                            .TransitionTo(Completed)
-                            .Publish(ctx => new PaymentFailedEvent(
-                                ctx.Instance.PaymentId,
-                                ctx.Message.Reason ?? "FRAUD_DETECTED"
-                            )),
-                        clean => clean
-                            .Schedule(
-                                ProviderTimeout,
-                                ctx => new ProviderTimeoutExpiredEvent()
-                            )
-                            .TransitionTo(ProviderInitiated)
-                            .Publish(ctx => new ProviderInitiationRequestedEvent(
-                                ctx.Instance.PaymentId,
-                                ctx.Instance.MerchantId,
-                                ctx.Instance.Amount,
-                                ctx.Instance.Currency,
-                                "Iyzico"
-                            ))
-                    )
+                .IfElse(
+                    ctx => ctx.Message.IsFraud,
+                    fraud => fraud
+                        .Then(ctx =>
+                        {
+                            LogTransition(
+                                ctx,
+                                from: nameof(FraudChecking),
+                                to: nameof(Completed));
+                        })
+                        .TransitionTo(Completed)
+                        .Publish(ctx => new PaymentFailedEvent(
+                            ctx.Instance.PaymentId,
+                            ctx.Message.Reason ?? "FRAUD_DETECTED")),
+                    clean => clean
+                        .Then(ctx =>
+                        {
+                            LogTransition(
+                                ctx,
+                                from: nameof(FraudChecking),
+                                to: nameof(ProviderInitiated));
+                        })
+                        .Schedule(ProviderTimeout, _ => new ProviderTimeoutExpiredEvent())
+                        .TransitionTo(ProviderInitiated)
+                        .Publish(ctx => new ProviderInitiationRequestedEvent(
+                            ctx.Instance.PaymentId,
+                            ctx.Instance.MerchantId,
+                            ctx.Instance.Amount,
+                            ctx.Instance.Currency,
+                            "Iyzico"))
+                )
         );
 
-        // ---- PROVIDER ----
+        // -------- PROVIDER --------
         During(ProviderInitiated,
             When(PaymentCompleted)
+                .Then(ctx =>
+                {
+                    LogTransition(
+                        ctx,
+                        from: nameof(ProviderInitiated),
+                        to: nameof(Completed));
+                })
                 .Unschedule(ProviderTimeout)
                 .TransitionTo(Completed)
         );
@@ -116,21 +132,46 @@ public sealed class PaymentStateMachine
         // -------- FRAUD TIMEOUT --------
         During(FraudChecking,
             When(FraudTimeout.Received)
+                .Then(ctx =>
+                {
+                    _logger.LogWarning(
+                        "Fraud timeout | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+                        ctx.Instance.PaymentId,
+                        ctx.CorrelationId);
+                })
                 .TransitionTo(Completed)
                 .Publish(ctx => new PaymentFailedEvent(
                     ctx.Instance.PaymentId,
-                    "FRAUD_TIMEOUT"
-                ))
+                    "FRAUD_TIMEOUT"))
         );
 
         // -------- PROVIDER TIMEOUT --------
         During(ProviderInitiated,
             When(ProviderTimeout.Received)
+                .Then(ctx =>
+                {
+                    _logger.LogWarning(
+                        "Provider timeout | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+                        ctx.Instance.PaymentId,
+                        ctx.CorrelationId);
+                })
                 .TransitionTo(Completed)
                 .Publish(ctx => new PaymentFailedEvent(
                     ctx.Instance.PaymentId,
-                    "PROVIDER_TIMEOUT"
-                ))
+                    "PROVIDER_TIMEOUT"))
         );
+    }
+
+    private void LogTransition(
+        BehaviorContext<PaymentState> ctx,
+        string from,
+        string to)
+    {
+        _logger.LogInformation(
+            "Payment saga state transition | PaymentId={PaymentId} | {FromState} -> {ToState} | CorrelationId={CorrelationId}",
+            ctx.Instance.PaymentId,
+            from,
+            to,
+            ctx.CorrelationId);
     }
 }
