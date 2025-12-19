@@ -122,6 +122,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<FraudCheckCompletedConsumer>();
     x.AddConsumer<ProviderInitiationConsumer>();
     x.AddConsumer<PaymentCompletedConsumer>();
+    x.AddConsumer<PaymentCreatedConsumer>();
     //x.AddConsumer(typeof(FaultConsumer<>));
 
 

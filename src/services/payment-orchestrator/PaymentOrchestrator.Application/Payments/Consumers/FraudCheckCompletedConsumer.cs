@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using Microsoft.Extensions.Logging;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Persistence;
 using Shared.Messaging.Events.Fraud;
@@ -9,10 +10,16 @@ namespace PaymentOrchestrator.Application.Payments.Consumers;
 public class FraudCheckCompletedConsumer(
     IPaymentRepository paymentRepository,
     IPublishEndpoint publishEndpoint,
+    ILogger<FraudCheckCompletedConsumer> _logger,
     IUnitOfWork unitOfWork) : IConsumer<FraudCheckCompletedEvent>
 {
     public async Task Consume(ConsumeContext<FraudCheckCompletedEvent> context)
     {
+        _logger.LogInformation(
+           "Consumed FraudCheckCompletedEvent | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+           context.Message.PaymentId,
+           context.Message.CorrelationId);
+
         var evt = context.Message;
 
         var payment = await paymentRepository.GetByIdAsync(evt.PaymentId);

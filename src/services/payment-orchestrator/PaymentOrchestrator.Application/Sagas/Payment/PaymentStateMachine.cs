@@ -66,6 +66,11 @@ public sealed class PaymentStateMachine
             When(PaymentCreated)
                 .Then(ctx =>
                 {
+                    _logger.LogInformation(
+                        "Saga received PaymentCreatedEvent | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+                        ctx.Message.PaymentId,
+                        ctx.Message.CorrelationId);
+
                     ctx.Instance.CorrelationId = ctx.Message.CorrelationId;
                     ctx.Instance.PaymentId = ctx.Message.PaymentId;
                     ctx.Instance.MerchantId = ctx.Message.MerchantId;
@@ -75,9 +80,17 @@ public sealed class PaymentStateMachine
 
                     LogTransition(ctx, "INITIAL", nameof(FraudChecking));
                 })
-                .Schedule(FraudTimeout, ctx => new FraudTimeoutExpiredEvent
+                .Schedule(FraudTimeout, ctx =>
                 {
-                    CorrelationId = ctx.Instance.CorrelationId
+                    _logger.LogInformation(
+                    "Fraud timeout scheduled | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+                    ctx.Instance.PaymentId,
+                    ctx.Instance.CorrelationId);
+
+                    return new FraudTimeoutExpiredEvent
+                    {
+                        CorrelationId = ctx.Instance.CorrelationId
+                    };
                 })
                 .TransitionTo(FraudChecking)
                 .Publish(ctx => new StartFraudCheckEvent(
