@@ -2,7 +2,7 @@
 
 public class MockProviderSelector : IProviderSelector
 {
-    public string Select(string merchantId, decimal amount, string currency)
+    public string Select(string currency)
     {
         if (currency == "TRY")
             return "PAYTR";

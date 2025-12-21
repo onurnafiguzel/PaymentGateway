@@ -2,5 +2,5 @@
 
 public interface IProviderSelector
 {
-    string Select(string merchantId, decimal amount, string currency);
+    string Select(string currency);
 }

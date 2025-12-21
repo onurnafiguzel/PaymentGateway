@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PaymentOrchestrator.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using PaymentOrchestrator.Infrastructure.Persistence;
 namespace PaymentOrchestrator.Infrastructure.Migrations
 {
     [DbContext(typeof(PaymentDbContext))]
-    partial class PaymentDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251221182534_PaymentStateUpdate")]
+    partial class PaymentStateUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,6 +226,7 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("ProviderName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid?>("ProviderTimeoutTokenId")

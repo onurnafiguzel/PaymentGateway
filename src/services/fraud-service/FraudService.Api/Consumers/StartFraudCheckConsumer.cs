@@ -1,29 +1,65 @@
 ﻿using MassTransit;
 using Shared.Messaging.Events.Fraud;
 
-namespace FraudService.Application.Consumers;
+namespace FraudService.Api.Consumers;
 
 public sealed class StartFraudCheckConsumer
     : IConsumer<StartFraudCheckEvent>
 {
+    private readonly ILogger<StartFraudCheckConsumer> _logger;
+    private readonly IBus _bus;
+
+    public StartFraudCheckConsumer(
+        ILogger<StartFraudCheckConsumer> logger,
+        IBus bus)
+    {
+        _logger = logger;
+        _bus = bus;
+    }
+
     public async Task Consume(ConsumeContext<StartFraudCheckEvent> context)
     {
-        var evt = context.Message;
+        var message = context.Message;
 
-        Console.WriteLine($"[FRAUD] Fraud check requested for payment {evt.PaymentId}");
+        _logger.LogInformation(
+            "Fraud check started | PaymentId={PaymentId} | Amount={Amount} | MerchantId={MerchantId} | CorrelationId={CorrelationId}",
+            message.PaymentId,
+            message.Amount,
+            message.MerchantId,
+            message.CorrelationId);
 
-        // Fake fraud logic
-        bool isFraud = evt.Amount > 10_000;
-        string? reason = isFraud ? "High amount fraud suspicion" : null;
+        // --------------------
+        // FRAUD DECISION
+        // --------------------
+        bool isFraud =
+            message.Amount > 10000 ||
+            Convert.ToInt16(message.MerchantId) % 7 == 0;
 
-        await context.Publish(new FraudCheckCompletedEvent(
-            evt.CorrelationId,
-            evt.PaymentId,
+        var reason = isFraud
+            ? "RULE_BASED_FRAUD"
+            : null;
+
+        _logger.LogInformation(
+            "Fraud check completed | PaymentId={PaymentId} | IsFraud={IsFraud} | Reason={Reason}",
+            message.PaymentId,
             isFraud,
-            reason,
-            DateTime.UtcNow
-        ));
+            reason);
 
-        Console.WriteLine($"[FRAUD] FraudCheckCompletedEvent published → Payment {evt.PaymentId}");
+
+        try
+        {
+            await _bus.Publish(new FraudCheckCompletedEvent(
+                message.CorrelationId,
+                message.PaymentId,
+                isFraud,
+                reason,
+                DateTime.UtcNow
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation("StartFraudCheckConsumer patladı");
+            throw;
+        }
     }
 }

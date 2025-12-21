@@ -1,4 +1,4 @@
-using FraudService.Application.Consumers;
+using FraudService.Api.Consumers;
 using MassTransit;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
@@ -30,10 +30,7 @@ builder.Services.AddMassTransit(x =>
             h.Password("admin");
         });
 
-        cfg.ReceiveEndpoint("fraud-check-requested-queue", e =>
-        {
-            e.ConfigureConsumer<StartFraudCheckConsumer>(context);
-        });
+        cfg.ConfigureEndpoints(context);
     });
 });
 

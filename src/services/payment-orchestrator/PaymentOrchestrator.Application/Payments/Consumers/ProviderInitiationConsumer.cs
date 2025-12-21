@@ -6,19 +6,20 @@ using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Consumers;
 
-public class ProviderInitiationConsumer(IServiceProvider provider) : IConsumer<ProviderInitiationRequestedEvent>
+public class ProviderInitiationConsumer(IServiceProvider provider, IProviderSelector providerSelector) : IConsumer<ProviderInitiationRequestedEvent>
 {
     public async Task Consume(ConsumeContext<ProviderInitiationRequestedEvent> context)
     {
         using var scope = provider.CreateScope();
         var initiator = scope.ServiceProvider.GetRequiredService<IPaymentInitiator>();
-
+        var providerName = providerSelector.Select(context.Message.Currency);
+        
         await initiator.InitiateAsync(new ProviderPaymentRequest(
             context.Message.PaymentId,
             context.Message.MerchantId,
             context.Message.Amount,
             context.Message.Currency,
-            context.Message.ProviderName
+            providerName
         ));
 
         Console.WriteLine("[ORCH] Provider initiation request sent.");

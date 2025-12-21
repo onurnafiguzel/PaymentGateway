@@ -11,9 +11,9 @@ volumes:
 
 services:
 
-  # ---------------------------
-  # PAYMENT ORCHESTRATOR API
-  # ---------------------------
+  #---------------------------
+  #PAYMENT ORCHESTRATOR API
+  #---------------------------
   # payment-orchestrator-api:
   #   build:
   #     context: .

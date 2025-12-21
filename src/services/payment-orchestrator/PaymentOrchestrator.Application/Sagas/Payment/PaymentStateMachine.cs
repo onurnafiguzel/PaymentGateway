@@ -14,6 +14,7 @@ public sealed class PaymentStateMachine
     public State FraudChecking { get; private set; } = default!;
     public State ProviderInitiated { get; private set; } = default!;
     public State Completed { get; private set; } = default!;
+    public State Failed { get; private set; } = default!;
 
     public Event<PaymentCreatedEvent> PaymentCreated { get; private set; } = default!;
     public Event<FraudCheckCompletedEvent> FraudCheckCompleted { get; private set; } = default!;
@@ -74,34 +75,53 @@ public sealed class PaymentStateMachine
         );
 
         During(FraudChecking,
-        When(FraudCheckCompleted)
-            .Then(ctx =>
-            {
-                _logger.LogInformation(
-                    "Fraud check completed | PaymentId={PaymentId} | IsFraud={IsFraud} | CorrelationId={CorrelationId}",
-                    ctx.Instance.PaymentId,
-                    ctx.Message.IsFraud,
-                    ctx.Instance.CorrelationId);
-            })
-            .IfElse(
-                ctx => ctx.Message.IsFraud,
-                binder => binder
-                    .TransitionTo(Completed)
-                    .Publish(ctx => new PaymentFailedEvent(
-                        ctx.Instance.CorrelationId,
+            When(FraudCheckCompleted)
+                .Then(ctx =>
+                {
+                    _logger.LogInformation(
+                        "Saga received FraudCheckCompletedEvent | PaymentId={PaymentId} | IsFraud={IsFraud} | Reason={Reason} | CorrelationId={CorrelationId}",
                         ctx.Instance.PaymentId,
-                        "FRAUD_DETECTED")),
-                binder => binder
-                    .TransitionTo(Completed)
-                    .Publish(ctx => new PaymentCompletedEvent(
-                        ctx.Instance.CorrelationId,
-                        ctx.Instance.PaymentId,
-                        ctx.Instance.MerchantId,
-                        ctx.Instance.Amount,
-                        ctx.Instance.Currency
+                        ctx.Message.IsFraud,
+                        ctx.Message.Reason,
+                        ctx.Instance.CorrelationId);
+                })
+                .IfElse(
+                    ctx => ctx.Message.IsFraud,
+
+                    // -------------------------
+                    // FRAUD → FAIL
+                    // -------------------------
+                    binder => binder
+                        .Then(ctx =>
+                        {
+                            LogTransition(ctx, nameof(FraudChecking), nameof(Failed));
+                        })
+                        .TransitionTo(Failed)
+                        .Publish(ctx => new PaymentFailedEvent(
+                            ctx.Instance.CorrelationId,
+                            ctx.Instance.PaymentId,
+                            ctx.Message.Reason ?? "FRAUD_DETECTED"
+                        )),
+
+                    // -------------------------
+                    // CLEAN → PROVIDER
+                    // -------------------------
+                    binder => binder
+                        .Then(ctx =>
+                        {
+                            LogTransition(ctx, nameof(FraudChecking), nameof(ProviderInitiated));                           
+                        })
+                        .Publish(ctx => new ProviderInitiationRequestedEvent(
+                            ctx.Instance.CorrelationId,
+                            ctx.Instance.PaymentId,
+                            ctx.Instance.MerchantId,
+                            ctx.Instance.Amount,
+                            ctx.Instance.Currency,
+                            ctx.Instance.ProviderName
                         ))
-            )
-);
+                        .TransitionTo(ProviderInitiated)
+                )
+        );
     }
 
     private void LogTransition(

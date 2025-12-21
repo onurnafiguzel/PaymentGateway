@@ -12,6 +12,7 @@ public sealed class PaymentState : SagaStateMachineInstance
     public string MerchantId { get; set; } = default!;
     public decimal Amount { get; set; }
     public string Currency { get; set; } = default!;
+    public string? ProviderName { get; set; } 
 
     // ---- TIMEOUT SCHEDULE IDS ----
     public Guid? FraudTimeoutTokenId { get; set; }
