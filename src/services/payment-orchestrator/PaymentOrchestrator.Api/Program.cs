@@ -130,11 +130,13 @@ builder.Services.AddMassTransit(x =>
     x.AddSagaStateMachine<PaymentStateMachine, PaymentState>()
         .EntityFrameworkRepository(r =>
         {
-            r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+            r.ConcurrencyMode = ConcurrencyMode.Optimistic;
 
             r.AddDbContext<DbContext, PaymentDbContext>((provider, cfg) =>
             {
-                cfg.UseNpgsql(builder.Configuration.GetConnectionString("PaymentDb"));
+                cfg.UseNpgsql(
+                    provider.GetRequiredService<IConfiguration>()
+                        .GetConnectionString("PaymentDb"));
             });
         });
 
@@ -148,24 +150,24 @@ builder.Services.AddMassTransit(x =>
     // ---------- RETRY + DELAYED ----------
     x.AddConfigureEndpointsCallback((context, name, cfg) =>
     {
-        cfg.UseDelayedRedelivery(r =>
-        {
-            r.Intervals(
-                TimeSpan.FromSeconds(10),
-                TimeSpan.FromMinutes(1),
-                TimeSpan.FromMinutes(5));
-        });
+        //cfg.UseDelayedRedelivery(r =>
+        //{
+        //    r.Intervals(
+        //        TimeSpan.FromSeconds(10),
+        //        TimeSpan.FromMinutes(1),
+        //        TimeSpan.FromMinutes(5));
+        //});
 
         cfg.UseMessageRetry(r =>
         {
-            r.Immediate(3);
+            r.Interval(3, TimeSpan.FromSeconds(5));
         });
     });
 
     // ---------- RABBITMQ ----------
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("rabbitmq", "/", h =>
+        cfg.Host("localhost", "/", h =>
         {
             h.Username("admin");
             h.Password("admin");

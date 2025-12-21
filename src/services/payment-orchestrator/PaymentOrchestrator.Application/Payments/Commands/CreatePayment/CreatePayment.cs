@@ -8,4 +8,4 @@ public record CreatePaymentCommand(
     string MerchantId,
     decimal Amount,
     string Currency = "TRY"
-) : IRequest<Result<int>>; // return Payment.Id
+) : IRequest<Result<Guid>>; // return Payment.Id

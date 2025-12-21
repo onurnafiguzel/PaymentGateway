@@ -12,8 +12,8 @@ using PaymentOrchestrator.Infrastructure.Persistence;
 namespace PaymentOrchestrator.Infrastructure.Migrations
 {
     [DbContext(typeof(PaymentDbContext))]
-    [Migration("20251217091346_ScheduleeOutbox")]
-    partial class ScheduleeOutbox
+    [Migration("20251219085918_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -195,13 +195,49 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     b.ToTable("OutboxState");
                 });
 
+            modelBuilder.Entity("PaymentOrchestrator.Application.Sagas.Payment.PaymentState", b =>
+                {
+                    b.Property<Guid>("CorrelationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CurrentState")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("FraudTimeoutTokenId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MerchantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProviderTimeoutTokenId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("CorrelationId");
+
+                    b.ToTable("PaymentStates");
+                });
+
             modelBuilder.Entity("PaymentOrchestrator.Domain.Payments.Payment", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("numeric(18,2)");

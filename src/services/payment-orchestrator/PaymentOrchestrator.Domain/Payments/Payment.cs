@@ -4,8 +4,9 @@ using Shared.Kernel.Domain.Results;
 
 namespace PaymentOrchestrator.Domain.Payments;
 
-public sealed class Payment : AggregateRoot<int>
+public sealed class Payment 
 {
+    public Guid Id { get; private set; } = Guid.NewGuid();
     public string MerchantId { get; private set; } = default!;
     public decimal Amount { get; private set; }
     public string Currency { get; private set; } = "TRY";

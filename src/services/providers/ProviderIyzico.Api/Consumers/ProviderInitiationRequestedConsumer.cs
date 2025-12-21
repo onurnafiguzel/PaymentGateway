@@ -21,8 +21,7 @@ public class ProviderInitiationRequestedConsumer : IConsumer<ProviderInitiationR
             evt.PaymentId,
             evt.MerchantId,
             evt.Amount,
-            evt.Currency,
-            providerTransactionId
+            evt.Currency
         ));
 
         Console.WriteLine($"[PAYTR] PaymentCompletedEvent published for payment {evt.PaymentId}");

@@ -4,5 +4,5 @@ using Shared.Kernel.Domain.Results;
 
 namespace PaymentOrchestrator.Application.Payments.Queries.GetPaymentById;
 
-public sealed record GetPaymentByIdQuery(int Id)
+public sealed record GetPaymentByIdQuery(Guid Id)
     : IRequest<Result<PaymentDto>>;

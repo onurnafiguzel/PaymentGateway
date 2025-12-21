@@ -25,7 +25,7 @@ public class PaymentsController(IMediator mediator) : ControllerBase
 
     // GET: api/payments/{id}
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetByIdAsync(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetPaymentByIdQuery(id), cancellationToken);
 
@@ -65,7 +65,7 @@ public class PaymentsController(IMediator mediator) : ControllerBase
     // PUT: api/payments/{id}/status
     [HttpPut("{id:int}/status")]
     public async Task<IActionResult> UpdateStatusAsync(
-        int id,
+        Guid id,
         [FromBody] UpdatePaymentStatusRequest request,
         CancellationToken cancellationToken)
     {

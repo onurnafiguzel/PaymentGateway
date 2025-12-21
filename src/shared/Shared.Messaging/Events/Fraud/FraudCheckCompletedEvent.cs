@@ -2,7 +2,7 @@
 
 public sealed record FraudCheckCompletedEvent(
     Guid CorrelationId,
-    int PaymentId,
+    Guid PaymentId,
     bool IsFraud,
     string? Reason,
     DateTime CheckedAt

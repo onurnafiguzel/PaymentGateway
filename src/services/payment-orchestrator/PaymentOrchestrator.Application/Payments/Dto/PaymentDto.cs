@@ -1,7 +1,7 @@
 ﻿namespace PaymentOrchestrator.Application.Payments.Dto;
 
 public sealed record PaymentDto(
-    int Id,
+    Guid Id,
     string MerchantId,
     decimal Amount,
     string Currency,

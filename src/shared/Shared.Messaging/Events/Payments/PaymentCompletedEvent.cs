@@ -2,9 +2,8 @@
 
 public sealed record PaymentCompletedEvent(
     Guid CorrelationId,
-    int PaymentId,
+    Guid PaymentId,
     string MerchantId,
     decimal Amount,
-    string Currency,
-    string ProviderTransactionId
+    string Currency
 );

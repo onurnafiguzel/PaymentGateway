@@ -14,15 +14,14 @@ public class ProviderInitiationRequestedConsumer : IConsumer<ProviderInitiationR
         // Fake provider process
         await Task.Delay(500); // simulate API call
 
-        var providerTransactionId = Guid.NewGuid().ToString();
+        //var providerTransactionId = Guid.NewGuid().ToString();
 
         await context.Publish(new PaymentCompletedEvent(
             evt.CorrelationId,
             evt.PaymentId,
             evt.MerchantId,
             evt.Amount,
-            evt.Currency,
-            providerTransactionId
+            evt.Currency
         ));
 
         Console.WriteLine($"[STRIPE] PaymentCompletedEvent published for payment {evt.PaymentId}");

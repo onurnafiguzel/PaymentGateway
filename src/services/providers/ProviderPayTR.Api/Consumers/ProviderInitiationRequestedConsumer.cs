@@ -14,17 +14,16 @@ public class ProviderInitiationRequestedConsumer : IConsumer<ProviderInitiationR
         // Fake provider process
         await Task.Delay(300);
 
-        var transactionId = Guid.NewGuid().ToString();
+        //var transactionId = Guid.NewGuid().ToString();
 
         await context.Publish(new PaymentCompletedEvent(
             evt.CorrelationId,
             evt.PaymentId,
             evt.MerchantId,
             evt.Amount,
-            evt.Currency,
-            transactionId
+            evt.Currency           
         ));
 
-        Console.WriteLine($"[PAYTR] PaymentCompletedEvent published → {transactionId}");
+        Console.WriteLine($"[PAYTR] PaymentCompletedEvent published → transactionId EKSİK");
     }
 }

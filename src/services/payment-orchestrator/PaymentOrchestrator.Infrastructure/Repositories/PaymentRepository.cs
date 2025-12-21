@@ -14,7 +14,7 @@ public class PaymentRepository : IPaymentRepository
         _dbContext = dbContext;
     }
 
-    public async Task<Payment?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Payment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Payments
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);

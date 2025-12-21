@@ -219,8 +219,8 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("PaymentId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("ProviderTimeoutTokenId")
                         .HasColumnType("uuid");
@@ -232,11 +232,9 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
 
             modelBuilder.Entity("PaymentOrchestrator.Domain.Payments.Payment", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("numeric(18,2)");

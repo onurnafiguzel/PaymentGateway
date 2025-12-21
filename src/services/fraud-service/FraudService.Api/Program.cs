@@ -26,8 +26,8 @@ builder.Services.AddMassTransit(x =>
     {
         cfg.Host("localhost", "/", h =>
         {
-            h.Username("guest");
-            h.Password("guest");
+            h.Username("admin");
+            h.Password("admin");
         });
 
         cfg.ReceiveEndpoint("fraud-check-requested-queue", e =>

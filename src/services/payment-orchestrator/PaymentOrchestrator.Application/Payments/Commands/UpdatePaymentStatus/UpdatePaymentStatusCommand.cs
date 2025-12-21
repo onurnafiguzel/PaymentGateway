@@ -5,6 +5,6 @@ using Shared.Kernel.Domain.Results;
 namespace PaymentOrchestrator.Application.Payments.Commands.UpdatePaymentStatus;
 
 public record UpdatePaymentStatusCommand(
-    int PaymentId,
+    Guid PaymentId,
     PaymentStatus NewStatus
 ) : IRequest<Result>;

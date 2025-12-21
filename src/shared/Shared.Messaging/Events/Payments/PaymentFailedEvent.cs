@@ -2,6 +2,6 @@
 
 public sealed record PaymentFailedEvent(
     Guid CorrelationId,
-    int PaymentId,
+    Guid PaymentId,
     string Reason
 );

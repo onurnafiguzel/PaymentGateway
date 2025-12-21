@@ -7,14 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PaymentOrchestrator.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class NewInboxOutbox : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "outbox_messages");
-
             migrationBuilder.CreateTable(
                 name: "InboxState",
                 columns: table => new
@@ -86,6 +83,44 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     table.PrimaryKey("PK_OutboxState", x => x.OutboxId);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Payments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MerchantId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    Currency = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ProviderTransactionId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    FailureReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Payments", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PaymentStates",
+                columns: table => new
+                {
+                    CorrelationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CurrentState = table.Column<string>(type: "text", nullable: false),
+                    PaymentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MerchantId = table.Column<string>(type: "text", nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    Currency = table.Column<string>(type: "text", nullable: false),
+                    FraudTimeoutTokenId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProviderTimeoutTokenId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PaymentStates", x => x.CorrelationId);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_InboxState_Delivered",
                 table: "InboxState",
@@ -131,21 +166,11 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "OutboxState");
 
-            migrationBuilder.CreateTable(
-                name: "outbox_messages",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Error = table.Column<string>(type: "text", nullable: true),
-                    OccurredOnUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Payload = table.Column<string>(type: "text", nullable: false),
-                    ProcessedOnUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Type = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_outbox_messages", x => x.Id);
-                });
+            migrationBuilder.DropTable(
+                name: "Payments");
+
+            migrationBuilder.DropTable(
+                name: "PaymentStates");
         }
     }
 }

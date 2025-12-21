@@ -12,9 +12,9 @@ public sealed class CreatePaymentCommandHandler(
     IPaymentRepository paymentRepository,
     IPublishEndpoint publishEndpoint,
     IUnitOfWork unitOfWork
-) : IRequestHandler<CreatePaymentCommand, Result<int>>
+) : IRequestHandler<CreatePaymentCommand, Result<Guid>>
 {
-    public async Task<Result<int>> Handle(
+    public async Task<Result<Guid>> Handle(
         CreatePaymentCommand request,
         CancellationToken cancellationToken)
     {
@@ -26,12 +26,13 @@ public sealed class CreatePaymentCommandHandler(
         );
 
         if (createResult.IsFailure)
-            return Result<int>.Failure(createResult.Error);
+            return Result<Guid>.Failure(createResult.Error);
 
         var payment = createResult.Value!;
 
         // 2) DB add
         await paymentRepository.AddAsync(payment, cancellationToken);
+
 
         // 3) Publish event (EF Outbox'a yazılır, RabbitMQ'ya hemen gitmez)
         var correlationId = Guid.NewGuid();
@@ -45,9 +46,7 @@ public sealed class CreatePaymentCommandHandler(
             CreatedAt = payment.CreatedAt
         });
 
-        // 4) Atomic commit (Payment + OutboxMessage)
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return Result<int>.Success(payment.Id);
+        return Result<Guid>.Success(payment.Id);
     }
 }

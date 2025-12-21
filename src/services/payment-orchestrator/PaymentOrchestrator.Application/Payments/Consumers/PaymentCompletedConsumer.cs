@@ -19,7 +19,7 @@ public class PaymentCompletedConsumer(
         if (payment is null)
             return;
 
-        payment.MarkAsCompleted(evt.ProviderTransactionId); 
+        //payment.MarkAsCompleted(evt.ProviderTransactionId); 
 
         Console.WriteLine($"[ORCH] Payment {evt.PaymentId} marked completed.");
     }
