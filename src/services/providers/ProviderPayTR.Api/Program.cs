@@ -1,5 +1,5 @@
-using MassTransit;
-using ProviderPayTR.Consumers;
+﻿using MassTransit;
+using ProviderPayTR.Api.Consumers;
 using Shared.Kernel;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,10 +19,27 @@ builder.Services.AddMassTransit(x =>
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("localhost");
-
-        cfg.ReceiveEndpoint("provider-initiation-queue", e =>
+        cfg.Host("localhost", "/", h =>
         {
+            h.Username("admin");
+            h.Password("admin");
+        });
+
+        cfg.ReceiveEndpoint("provider-paytr-initiation-queue", e =>
+        {
+            // 🔁 Retry policy (transient hatalar için)
+            e.UseMessageRetry(r =>
+            {
+                r.Exponential(
+                    retryLimit: 5,
+                    minInterval: TimeSpan.FromSeconds(1),
+                    maxInterval: TimeSpan.FromSeconds(30),
+                    intervalDelta: TimeSpan.FromSeconds(2));
+            });
+
+            // 🧠 Idempotent publish (double publish koruması)
+            e.UseInMemoryOutbox();
+
             e.ConfigureConsumer<ProviderInitiationRequestedConsumer>(context);
         });
     });

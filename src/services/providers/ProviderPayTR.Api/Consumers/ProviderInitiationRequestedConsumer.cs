@@ -1,29 +1,64 @@
 ﻿using MassTransit;
 using Shared.Messaging.Events.Payments;
 
-namespace ProviderPayTR.Consumers;
+namespace ProviderPayTR.Api.Consumers;
 
-public class ProviderInitiationRequestedConsumer : IConsumer<ProviderInitiationRequestedEvent>
+public sealed class ProviderInitiationRequestedConsumer
+    : IConsumer<ProviderInitiationRequestedEvent>
 {
+    private readonly ILogger<ProviderInitiationRequestedConsumer> _logger;
+
+    public ProviderInitiationRequestedConsumer(
+        ILogger<ProviderInitiationRequestedConsumer> logger)
+    {
+        _logger = logger;
+    }
+
     public async Task Consume(ConsumeContext<ProviderInitiationRequestedEvent> context)
     {
-        var evt = context.Message;
+        var message = context.Message;
 
-        Console.WriteLine($"[PAYTR] Provider initiation for payment {evt.PaymentId}");
+        _logger.LogInformation(
+            "[PAYTR] Provider initiation received | PaymentId={PaymentId} | Amount={Amount} {Currency} | CorrelationId={CorrelationId}",
+            message.PaymentId,
+            message.Amount,
+            message.Currency,
+            message.CorrelationId);
 
-        // Fake provider process
-        await Task.Delay(300);
+        // 1️⃣ Gerçekçi provider davranışı (delay)
+        var delaySeconds = Random.Shared.Next(2, 9);
+        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), context.CancellationToken);
 
-        //var transactionId = Guid.NewGuid().ToString();
+        // 2️⃣ %15 ihtimalle provider fail simülasyonu
+        var isFailed = Random.Shared.NextDouble() < 0.15;
 
-        await context.Publish(new PaymentCompletedEvent(
-            evt.CorrelationId,
-            evt.PaymentId,
-            evt.MerchantId,
-            evt.Amount,
-            evt.Currency           
+        if (!isFailed)
+        {
+            _logger.LogInformation(
+                "[PAYTR] Payment succeeded | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+                message.PaymentId,
+                message.CorrelationId);
+
+            await context.Publish(new PaymentCompletedEvent(
+                CorrelationId: message.CorrelationId,
+                PaymentId: message.PaymentId,
+                MerchantId: message.MerchantId,
+                Amount: message.Amount,
+                Currency: message.Currency
+            ));
+
+            return;
+        }
+
+        _logger.LogWarning(
+            "[PAYTR] Payment failed | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+            message.PaymentId,
+            message.CorrelationId);
+
+        await context.Publish(new PaymentFailedEvent(
+            CorrelationId: message.CorrelationId,
+            PaymentId: message.PaymentId,
+            Reason: "PROVIDER_PAYTR_DECLINED"
         ));
-
-        Console.WriteLine($"[PAYTR] PaymentCompletedEvent published → transactionId EKSİK");
     }
 }

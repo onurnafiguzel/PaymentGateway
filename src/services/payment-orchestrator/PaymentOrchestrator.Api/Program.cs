@@ -15,6 +15,7 @@ using PaymentOrchestrator.Infrastructure.Messaging;
 using PaymentOrchestrator.Infrastructure.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
 using PaymentOrchestrator.Infrastructure.Repositories;
+using Quartz;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 using Shared.Kernel;
@@ -125,6 +126,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<PaymentCreatedConsumer>();
     //x.AddConsumer(typeof(FaultConsumer<>));
 
+    x.AddQuartzConsumers();
 
     // ---------- SAGA ----------
     x.AddSagaStateMachine<PaymentStateMachine, PaymentState>()
@@ -176,9 +178,18 @@ builder.Services.AddMassTransit(x =>
         cfg.ConnectPublishObserver(
             context.GetRequiredService<CorrelationIdPublishObserver>());
 
+        cfg.UseMessageScheduler(new Uri("queue:quartz"));       
+
         cfg.ConfigureEndpoints(context);
     });
 });
+
+builder.Services.AddQuartz(q =>
+{
+    q.UseMicrosoftDependencyInjectionJobFactory();
+});
+
+builder.Services.AddQuartzHostedService();
 
 builder.Services.AddSingleton<CorrelationIdPublishObserver>();
 
