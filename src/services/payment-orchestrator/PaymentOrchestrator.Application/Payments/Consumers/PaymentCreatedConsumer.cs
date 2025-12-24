@@ -4,42 +4,27 @@ using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Consumers;
 
-/// <summary>
-/// Observability & safety consumer.
-/// Amaç:
-/// - PaymentCreatedEvent gerçekten publish ediliyor mu?
-/// - CorrelationId / PaymentId doğru mu?
-/// - Saga'ya ulaşmadan önce event kayboluyor mu?
-/// </summary>
-public sealed class PaymentCreatedConsumer
-    : IConsumer<PaymentCreatedEvent>
+public sealed class PaymentCreatedConsumer : IConsumer<PaymentCreatedEvent>
 {
     private readonly ILogger<PaymentCreatedConsumer> _logger;
 
-    public PaymentCreatedConsumer(
-        ILogger<PaymentCreatedConsumer> logger)
+    public PaymentCreatedConsumer(ILogger<PaymentCreatedConsumer> logger)
     {
         _logger = logger;
     }
 
     public Task Consume(ConsumeContext<PaymentCreatedEvent> context)
     {
-        Console.WriteLine("🔥 PAYMENT CREATED CONSUMER HIT 🔥");
-
-        var message = context.Message;
-
         _logger.LogInformation(
-            "PaymentCreatedEvent consumed | PaymentId={PaymentId} | CorrelationId={CorrelationId} | MerchantId={MerchantId} | Amount={Amount} {Currency}",
-            message.PaymentId,
-            message.CorrelationId,
-            message.MerchantId,
-            message.Amount,
-            message.Currency
-        );
+            "PaymentCreatedEvent consumed | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
+            context.Message.PaymentId,
+            context.Message.CorrelationId);
 
-        // ❗ Burada business logic YOK
-        // Saga bu event'i ayrıca consume edecek
-
+        // DB write YOK
+        // Aggregate YOK
+        // Saga zaten bu event'i dinliyor
+        // Fraud flow'u tetikleniyor
         return Task.CompletedTask;
     }
 }
+
