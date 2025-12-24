@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Persistence;
-using PaymentOrchestrator.Domain.Payments;
 using Shared.Kernel.Domain.Results;
 
 namespace PaymentOrchestrator.Application.Payments.Commands.UpdatePaymentStatus;

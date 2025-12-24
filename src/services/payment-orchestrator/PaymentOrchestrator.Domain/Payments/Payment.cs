@@ -1,5 +1,4 @@
-﻿using Shared.Kernel.Domain.Entities;
-using Shared.Kernel.Domain.Primitives;
+﻿using Shared.Kernel.Domain.Primitives;
 using Shared.Kernel.Domain.Results;
 
 namespace PaymentOrchestrator.Domain.Payments;
@@ -50,8 +49,8 @@ public sealed class Payment
     // Fraud / Provider Fail
     public Result MarkAsFailed(string reason)
     {
-        if (Status == PaymentStatus.Succeeded)
-            return Result.Failure(new("payment.already_succeeded", "Succeeded payment cannot fail."));
+        //if (Status == PaymentStatus.Succeeded)
+        //    return Result.Failure(new("payment.already_succeeded", "Succeeded payment cannot fail."));
 
         Status = PaymentStatus.Failed;
         FailureReason = reason;
@@ -63,8 +62,8 @@ public sealed class Payment
     // Provider success
     public Result MarkAsCompleted(string providerTransactionId)
     {
-        if (Status == PaymentStatus.Failed)
-            return Result.Failure(new("payment.failed_already", "A failed payment cannot be completed."));
+        //if (Status == PaymentStatus.Failed)
+        //    return Result.Failure(new("payment.failed_already", "A failed payment cannot be completed."));
 
         ProviderTransactionId = providerTransactionId;
         Status = PaymentStatus.Succeeded;
@@ -76,8 +75,8 @@ public sealed class Payment
     // Manual (optional)
     public Result UpdateStatus(PaymentStatus newStatus)
     {
-        if (Status == PaymentStatus.Succeeded)
-            return Result.Failure(new("payment.succeeded_locked", "A succeeded payment cannot change."));
+        //if (Status == PaymentStatus.Succeeded)
+        //    return Result.Failure(new("payment.succeeded_locked", "A succeeded payment cannot change."));
 
         Status = newStatus;
         UpdatedAt = DateTime.UtcNow;

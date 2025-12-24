@@ -35,10 +35,10 @@ public sealed class CreatePaymentCommandHandler(
 
 
         // 3) Publish event (EF Outbox'a yazılır, RabbitMQ'ya hemen gitmez)
-        var correlationId = Guid.NewGuid();
+       
         await publishEndpoint.Publish(new PaymentCreatedEvent
         {
-            CorrelationId = correlationId,
+            CorrelationId = payment.Id,
             PaymentId = payment.Id,
             MerchantId = payment.MerchantId,
             Amount = payment.Amount,

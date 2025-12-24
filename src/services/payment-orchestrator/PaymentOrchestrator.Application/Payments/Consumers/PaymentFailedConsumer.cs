@@ -7,22 +7,23 @@ using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Consumers;
 
-public sealed class PaymentCompletedConsumer(
+public sealed class PaymentFailedConsumer(
     IMediator mediator,
-    ILogger<PaymentCompletedConsumer> logger
-) : IConsumer<PaymentCompletedEvent>
+    ILogger<PaymentFailedConsumer> logger
+) : IConsumer<PaymentFailedEvent>
 {
-    public async Task Consume(ConsumeContext<PaymentCompletedEvent> context)
+    public async Task Consume(ConsumeContext<PaymentFailedEvent> context)
     {
         var evt = context.Message;
 
         logger.LogInformation(
-            "PaymentCompletedEvent consumed | PaymentId={PaymentId}",
-            evt.PaymentId);
+            "PaymentFailedEvent consumed | PaymentId={PaymentId} | Reason={Reason}",
+            evt.PaymentId,
+            evt.Reason);
 
         await mediator.Send(new UpdatePaymentStatusCommand(
             evt.PaymentId,
-            PaymentStatus.Succeeded
+            PaymentStatus.Failed
         ));
     }
 }
