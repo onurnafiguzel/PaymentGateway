@@ -14,6 +14,10 @@ public sealed class Payment
     public string? FailureReason { get; private set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; private set; }
+    public int RetryCount { get; private set; }
+    public DateTime? LastRetriedAtUtc { get; private set; }
+
+    private const int MaxRetryCount = 3;
 
     private Payment() { } // EF Core için
 
@@ -46,6 +50,31 @@ public sealed class Payment
     // DOMAIN BEHAVIORS
     // -------------------------------------------
 
+    // ---------------------------
+    // REPLAY BEHAVIOR (🔥 YENİ)
+    // ---------------------------
+    public Result Replay(string reason)
+    {
+        Guard.AgainstNull(reason, nameof(reason));
+
+        if (Status != PaymentStatus.Failed)
+            return Result.Failure(new("payment.replay_not_allowed", "Only failed payments can be replayed."));
+
+        if (RetryCount >= MaxRetryCount)
+            return Result.Failure(new("payment.replay_limit_reached", "Max retry count reached."));
+
+        RetryCount++;
+        LastRetriedAtUtc = DateTime.UtcNow;
+
+        // Reset state
+        Status = PaymentStatus.Pending;
+        FailureReason = null;
+        ProviderTransactionId = null;
+        Touch();
+
+        return Result.Success();
+    }
+
     // Fraud / Provider Fail
     public Result MarkAsFailed(string reason)
     {
@@ -54,7 +83,7 @@ public sealed class Payment
 
         Status = PaymentStatus.Failed;
         FailureReason = reason;
-        UpdatedAt = DateTime.UtcNow;
+        Touch();
 
         return Result.Success();
     }
@@ -67,7 +96,7 @@ public sealed class Payment
 
         ProviderTransactionId = providerTransactionId;
         Status = PaymentStatus.Succeeded;
-        UpdatedAt = DateTime.UtcNow;
+        Touch();
 
         return Result.Success();
     }
@@ -79,8 +108,11 @@ public sealed class Payment
         //    return Result.Failure(new("payment.succeeded_locked", "A succeeded payment cannot change."));
 
         Status = newStatus;
-        UpdatedAt = DateTime.UtcNow;
+        Touch();
 
         return Result.Success();
     }
+
+    private void Touch()
+     => UpdatedAt = DateTime.UtcNow;
 }

@@ -125,6 +125,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<PaymentCompletedConsumer>();
     x.AddConsumer<PaymentCreatedConsumer>();
     x.AddConsumer<PaymentFailedConsumer>();
+    x.AddConsumer<ReplayPaymentRequestedConsumer>();
     //x.AddConsumer(typeof(FaultConsumer<>));
 
     x.AddQuartzConsumers();
