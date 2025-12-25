@@ -9,11 +9,11 @@ using PaymentOrchestrator.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace PaymentOrchestrator.Infrastructure.Migrations
+namespace PaymentOrchestrator.Infrastructure.Migrations.Write
 {
     [DbContext(typeof(PaymentDbContext))]
-    [Migration("20251219085918_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251225185517_InitialCreate_Write")]
+    partial class InitialCreate_Write
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -225,6 +225,9 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     b.Property<Guid>("PaymentId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ProviderName")
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("ProviderTimeoutTokenId")
                         .HasColumnType("uuid");
 
@@ -254,6 +257,9 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<DateTime?>("LastRetriedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("MerchantId")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -262,6 +268,9 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     b.Property<string>("ProviderTransactionId")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -272,6 +281,49 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Payments", (string)null);
+                });
+
+            modelBuilder.Entity("PaymentOrchestrator.Domain.Payments.PaymentReplayHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("TriggeredBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("payment_replay_histories", (string)null);
+                });
+
+            modelBuilder.Entity("PaymentOrchestrator.Domain.Payments.PaymentReplayHistory", b =>
+                {
+                    b.HasOne("PaymentOrchestrator.Domain.Payments.Payment", null)
+                        .WithMany("_replayHistories")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PaymentOrchestrator.Domain.Payments.Payment", b =>
+                {
+                    b.Navigation("_replayHistories");
                 });
 #pragma warning restore 612, 618
         }

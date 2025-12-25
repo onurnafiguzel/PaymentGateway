@@ -4,10 +4,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace PaymentOrchestrator.Infrastructure.Migrations
+namespace PaymentOrchestrator.Infrastructure.Migrations.Write
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialCreate_Write : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -95,7 +95,9 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     ProviderTransactionId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     FailureReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RetryCount = table.Column<int>(type: "integer", nullable: false),
+                    LastRetriedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -112,6 +114,7 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                     MerchantId = table.Column<string>(type: "text", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
                     Currency = table.Column<string>(type: "text", nullable: false),
+                    ProviderName = table.Column<string>(type: "text", nullable: true),
                     FraudTimeoutTokenId = table.Column<Guid>(type: "uuid", nullable: true),
                     ProviderTimeoutTokenId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -119,6 +122,27 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PaymentStates", x => x.CorrelationId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "payment_replay_histories",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PaymentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Reason = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    TriggeredBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_payment_replay_histories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_payment_replay_histories_Payments_PaymentId",
+                        column: x => x.PaymentId,
+                        principalTable: "Payments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -152,6 +176,11 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                 name: "IX_OutboxState_Created",
                 table: "OutboxState",
                 column: "Created");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_payment_replay_histories_PaymentId",
+                table: "payment_replay_histories",
+                column: "PaymentId");
         }
 
         /// <inheritdoc />
@@ -167,10 +196,13 @@ namespace PaymentOrchestrator.Infrastructure.Migrations
                 name: "OutboxState");
 
             migrationBuilder.DropTable(
-                name: "Payments");
+                name: "payment_replay_histories");
 
             migrationBuilder.DropTable(
                 name: "PaymentStates");
+
+            migrationBuilder.DropTable(
+                name: "Payments");
         }
     }
 }
