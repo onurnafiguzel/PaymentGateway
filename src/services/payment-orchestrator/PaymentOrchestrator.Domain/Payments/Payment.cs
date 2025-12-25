@@ -18,6 +18,8 @@ public sealed class Payment
     public DateTime? LastRetriedAtUtc { get; private set; }
 
     private const int MaxRetryCount = 3;
+    private readonly List<PaymentReplayHistory> _replayHistories = new();
+
 
     private Payment() { } // EF Core için
 
@@ -72,6 +74,13 @@ public sealed class Payment
         ProviderTransactionId = null;
         Touch();
 
+        _replayHistories.Add(
+          new PaymentReplayHistory(
+              Id,
+              reason,
+              "admin-api"
+          ));
+
         return Result.Success();
     }
 
@@ -115,4 +124,10 @@ public sealed class Payment
 
     private void Touch()
      => UpdatedAt = DateTime.UtcNow;
+  
+    public void AddReplayHistory(string reason, string triggeredBy)
+    {
+        _replayHistories.Add(
+            new PaymentReplayHistory(Id, reason, triggeredBy));
+    }
 }

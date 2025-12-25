@@ -23,6 +23,11 @@ public sealed class ReplayPaymentCommandHandler(
         if (replayResult.IsFailure)
             return replayResult;
 
+        payment.AddReplayHistory(
+                reason: request.Reason,
+                triggeredBy: "admin-api" // sonra auth ile userId gelecek
+            );
+
         // IMPORTANT: Saga’yı yeniden başlatmak için aynı payment bilgileriyle PaymentCreated publish ediyoruz.
         await publishEndpoint.Publish(new PaymentCreatedEvent
         {

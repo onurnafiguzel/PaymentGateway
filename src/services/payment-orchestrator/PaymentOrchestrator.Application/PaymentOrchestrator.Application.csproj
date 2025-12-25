@@ -3,6 +3,11 @@
 	<ItemGroup>
 		<PackageReference Include="MediatR" />
 		<PackageReference Include="MassTransit" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" PrivateAssets="all" />
 
 		<ProjectReference Include="..\..\..\shared\Shared.Contracts\Shared.Contracts.csproj" />
 		<ProjectReference Include="..\..\..\shared\Shared.Kernel\Shared.Kernel.csproj" />

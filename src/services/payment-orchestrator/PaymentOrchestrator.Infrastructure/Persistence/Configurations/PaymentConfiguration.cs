@@ -42,5 +42,14 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 
         builder.Property(p => p.UpdatedAt)
             .IsRequired(false);
+
+        // 🔥 Aggregate boundary
+        builder.HasMany(typeof(PaymentReplayHistory), "_replayHistories")
+            .WithOne()
+            .HasForeignKey("PaymentId")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation("_replayHistories")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

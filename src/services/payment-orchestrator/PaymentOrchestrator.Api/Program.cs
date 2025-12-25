@@ -9,16 +9,20 @@ using PaymentOrchestrator.Application.Common.Observabilitiy;
 using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
+using PaymentOrchestrator.Application.ReadModels.Payments.Abstractions;
+using PaymentOrchestrator.Application.ReadModels.Payments.Consumers;
 using PaymentOrchestrator.Application.Sagas.Payment;
 using PaymentOrchestrator.Infrastructure;
 using PaymentOrchestrator.Infrastructure.Messaging;
 using PaymentOrchestrator.Infrastructure.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
 using PaymentOrchestrator.Infrastructure.Repositories;
+using PaymentOrchestrator.ReadModel.Persistence;
 using Quartz;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 using Shared.Kernel;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,6 +132,12 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<ReplayPaymentRequestedConsumer>();
     //x.AddConsumer(typeof(FaultConsumer<>));
 
+    // READ MODEL PROJECTIONS
+    x.AddConsumer<PaymentCreatedProjectionConsumer>();
+    x.AddConsumer<PaymentCompletedProjectionConsumer>();
+    x.AddConsumer<PaymentFailedProjectionConsumer>();
+    x.AddConsumer<FraudCheckCompletedProjectionConsumer>();
+
     x.AddQuartzConsumers();
 
     // ---------- SAGA ----------
@@ -195,6 +205,20 @@ builder.Services.AddQuartzHostedService();
 
 builder.Services.AddSingleton<CorrelationIdPublishObserver>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("replay-policy", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,           // 5 replay
+                Window = TimeSpan.FromMinutes(10),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+});
+
 
 var app = builder.Build();
 
@@ -211,6 +235,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseRateLimiter();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
