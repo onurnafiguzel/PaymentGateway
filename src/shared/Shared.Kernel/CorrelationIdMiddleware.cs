@@ -22,6 +22,9 @@ public sealed class CorrelationIdMiddleware : IMiddleware
         context.Response.Headers[HeaderName] = correlationId;
 
         // 4) LogContext'e push yap
+
+        using (LogContext.PushProperty("paymentId",
+                   context.Request.Headers.TryGetValue("PaymentId", out var pid) ? pid.ToString() : Guid.NewGuid().ToString()))
         using (LogContext.PushProperty("CorrelationId", correlationId))
         {
             await next(context);

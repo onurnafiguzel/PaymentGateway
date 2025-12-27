@@ -6,10 +6,10 @@ using OpenTelemetry.Trace;
 using PaymentOrchestrator.Application;
 using PaymentOrchestrator.Application.Abstractions;
 using PaymentOrchestrator.Application.Common.Observabilitiy;
+using PaymentOrchestrator.Application.Observability;
 using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
-using PaymentOrchestrator.Application.ReadModels.Payments.Abstractions;
 using PaymentOrchestrator.Application.ReadModels.Payments.Consumers;
 using PaymentOrchestrator.Application.Sagas.Payment;
 using PaymentOrchestrator.Infrastructure;
@@ -17,7 +17,6 @@ using PaymentOrchestrator.Infrastructure.Messaging;
 using PaymentOrchestrator.Infrastructure.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
 using PaymentOrchestrator.Infrastructure.Repositories;
-using PaymentOrchestrator.ReadModel.Persistence;
 using Quartz;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
@@ -83,6 +82,8 @@ builder.Services.AddOpenTelemetry()
             })
             // EVENT BUS Traces — KEY PART
             .AddSource("PaymentOrchestrator")
+            .AddSource("PaymentOrchestrator.Consumers") // 🔥 EKLE
+
 
             // OTLP Exporter → Jaeger Collector
             .SetResourceBuilder(
@@ -178,6 +179,7 @@ builder.Services.AddMassTransit(x =>
         });
     });
 
+
     // ---------- RABBITMQ ----------
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -189,6 +191,10 @@ builder.Services.AddMassTransit(x =>
 
         cfg.ConnectPublishObserver(
             context.GetRequiredService<CorrelationIdPublishObserver>());
+
+        // 🔥 GLOBAL CONSUME FILTER
+        cfg.UseConsumeFilter(typeof(ConsumerObservabilityFilter<>), context);
+
 
         cfg.UseMessageScheduler(new Uri("queue:quartz"));       
 
@@ -253,9 +259,11 @@ void ConfigureLogging()
         .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
         {
             AutoRegisterTemplate = true,
-            IndexFormat = $"payment-logs-{DateTime.UtcNow:yyyy-MM}",
+            AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7,
+            IndexFormat = $"payment-logs-{DateTime.UtcNow:yyyy-MM-dd}",
             NumberOfReplicas = 1,
-            NumberOfShards = 2
+            NumberOfShards = 2,
+            MinimumLogEventLevel = Serilog.Events.LogEventLevel.Information
         })
         .CreateLogger();
 }

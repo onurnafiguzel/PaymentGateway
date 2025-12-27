@@ -73,9 +73,11 @@ void ConfigureLogging()
         .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
         {
             AutoRegisterTemplate = true,
-            IndexFormat = $"gateway-logs-{DateTime.UtcNow:yyyy-MM}",
+            AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7,
+            IndexFormat = $"gateway-logs-{DateTime.UtcNow:yyyy-MM-dd}",
             NumberOfReplicas = 1,
-            NumberOfShards = 2
+            NumberOfShards = 2,
+            MinimumLogEventLevel = Serilog.Events.LogEventLevel.Information
         })
         .CreateLogger();
 }
