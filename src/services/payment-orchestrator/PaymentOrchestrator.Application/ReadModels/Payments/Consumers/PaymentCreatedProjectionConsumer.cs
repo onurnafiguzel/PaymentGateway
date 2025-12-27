@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using PaymentOrchestrator.Application.ReadModels.Common;
 using PaymentOrchestrator.Application.ReadModels.Payments.Abstractions;
 using PaymentOrchestrator.Application.ReadModels.Payments.Entities;
 using Shared.Messaging.Events.Payments;
@@ -19,6 +20,8 @@ public sealed class PaymentCreatedProjectionConsumer
     public async Task Consume(ConsumeContext<PaymentCreatedEvent> context)
     {
         var msg = context.Message;
+        var messageId = context.MessageId ?? Guid.Empty;
+        var consumerName = nameof(PaymentCreatedProjectionConsumer);
 
         if (await _db.PaymentTimelines
             .AnyAsync(x => x.PaymentId == msg.PaymentId))
@@ -31,5 +34,8 @@ public sealed class PaymentCreatedProjectionConsumer
 
         _db.PaymentTimelines.Add(timeline);
         await _db.SaveChangesAsync(context.CancellationToken);
+
+        await ReadModelIdempotency.MarkAsProcessedAsync(
+            _db, messageId, consumerName, context.CancellationToken);
     }
 }

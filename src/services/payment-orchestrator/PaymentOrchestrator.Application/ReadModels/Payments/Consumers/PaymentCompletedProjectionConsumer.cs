@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using PaymentOrchestrator.Application.ReadModels.Common;
 using PaymentOrchestrator.Application.ReadModels.Payments.Abstractions;
 using Shared.Messaging.Events.Payments;
 
@@ -17,11 +18,17 @@ public sealed class PaymentCompletedProjectionConsumer
 
     public async Task Consume(ConsumeContext<PaymentCompletedEvent> context)
     {
-        var evt = context.Message;
+        var messageId = context.MessageId ?? Guid.Empty;
+        var consumerName = nameof(PaymentCompletedProjectionConsumer);
+
+
+        if (await ReadModelIdempotency.IsAlreadyProcessedAsync(
+          _db, messageId, consumerName, context.CancellationToken))
+            return;
 
         var timeline = await _db.PaymentTimelines
             .Include(x => x.Events)
-            .FirstOrDefaultAsync(x => x.PaymentId == evt.PaymentId,
+            .FirstOrDefaultAsync(x => x.PaymentId == context.Message.PaymentId,
                 context.CancellationToken);
 
         if (timeline is null)
@@ -34,8 +41,12 @@ public sealed class PaymentCompletedProjectionConsumer
         timeline.UpdateStatus("Succeeded");
         timeline.AddEvent(
             "PaymentCompleted",
-            $"Payment completed. PaymentId: {evt.PaymentId}");
+            $"Payment completed. PaymentId: {context.Message.PaymentId}");
 
         await _db.SaveChangesAsync(context.CancellationToken);
+
+        await ReadModelIdempotency.MarkAsProcessedAsync(
+            _db, messageId, consumerName, context.CancellationToken);
+
     }
 }

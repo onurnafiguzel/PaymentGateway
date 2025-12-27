@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using PaymentOrchestrator.Application.ReadModels.Common;
 using PaymentOrchestrator.Application.ReadModels.Payments.Abstractions;
 using Shared.Messaging.Events.Fraud;
 
@@ -18,6 +19,13 @@ public sealed class FraudCheckCompletedProjectionConsumer
     public async Task Consume(ConsumeContext<FraudCheckCompletedEvent> context)
     {
         var evt = context.Message;
+        var messageId = context.MessageId ?? Guid.Empty;
+        var consumerName = nameof(FraudCheckCompletedProjectionConsumer);
+
+
+        if (await ReadModelIdempotency.IsAlreadyProcessedAsync(
+          _db, messageId, consumerName, context.CancellationToken))
+            return;
 
         var timeline = await _db.PaymentTimelines
             .Include(x => x.Events)
@@ -32,5 +40,8 @@ public sealed class FraudCheckCompletedProjectionConsumer
                 : "Fraud check passed");
 
         await _db.SaveChangesAsync();
+
+        await ReadModelIdempotency.MarkAsProcessedAsync(
+            _db, messageId, consumerName, context.CancellationToken);
     }
 }

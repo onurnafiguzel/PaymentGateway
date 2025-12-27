@@ -8,5 +8,7 @@ public interface IPaymentReadDbContext
     DbSet<PaymentTimeline> PaymentTimelines { get; }
     DbSet<PaymentTimelineEvent> PaymentTimelineEvents { get; }
 
+    DbSet<TEntity> Set<TEntity>() where TEntity : class;
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

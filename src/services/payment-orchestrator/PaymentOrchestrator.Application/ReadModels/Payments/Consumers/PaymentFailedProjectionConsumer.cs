@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using PaymentOrchestrator.Application.ReadModels.Common;
 using PaymentOrchestrator.Application.ReadModels.Payments.Abstractions;
 using Shared.Messaging.Events.Payments;
 
@@ -18,6 +19,8 @@ public sealed class PaymentFailedProjectionConsumer
     public async Task Consume(ConsumeContext<PaymentFailedEvent> context)
     {
         var evt = context.Message;
+        var messageId = context.MessageId ?? Guid.Empty;
+        var consumerName = nameof(PaymentFailedProjectionConsumer);
 
         var timeline = await _db.PaymentTimelines
             .Include(x => x.Events)
@@ -37,5 +40,8 @@ public sealed class PaymentFailedProjectionConsumer
             $"Payment failed. Reason: {evt.Reason}");
 
         await _db.SaveChangesAsync(context.CancellationToken);
+
+        await ReadModelIdempotency.MarkAsProcessedAsync(
+            _db, messageId, consumerName, context.CancellationToken);
     }
 }
