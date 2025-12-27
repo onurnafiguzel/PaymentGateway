@@ -5,5 +5,6 @@ public sealed record PaymentCompletedEvent(
     Guid PaymentId,
     string MerchantId,
     decimal Amount,
-    string Currency
+    string Currency,
+    string ProviderTransactionId
 );

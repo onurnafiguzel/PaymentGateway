@@ -44,7 +44,8 @@ public sealed class ProviderInitiationRequestedConsumer
                 PaymentId: message.PaymentId,
                 MerchantId: message.MerchantId,
                 Amount: message.Amount,
-                Currency: message.Currency
+                Currency: message.Currency,
+                ProviderTransactionId: Guid.NewGuid().ToString()
             ));
 
             return;
