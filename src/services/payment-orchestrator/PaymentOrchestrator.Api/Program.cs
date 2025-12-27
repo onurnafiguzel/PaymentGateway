@@ -10,12 +10,14 @@ using PaymentOrchestrator.Application.Observability;
 using PaymentOrchestrator.Application.Payments.Consumers;
 using PaymentOrchestrator.Application.Payments.Services;
 using PaymentOrchestrator.Application.Persistence;
+using PaymentOrchestrator.Application.ReadModels.Payments.Abstractions;
 using PaymentOrchestrator.Application.ReadModels.Payments.Consumers;
 using PaymentOrchestrator.Application.Sagas.Payment;
 using PaymentOrchestrator.Infrastructure;
 using PaymentOrchestrator.Infrastructure.Messaging;
 using PaymentOrchestrator.Infrastructure.Persistence;
 using PaymentOrchestrator.Infrastructure.Providers;
+using PaymentOrchestrator.Infrastructure.ReadModels;
 using PaymentOrchestrator.Infrastructure.Repositories;
 using Quartz;
 using Serilog;
@@ -64,6 +66,9 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // Middleware (Correlation Id)
 // -------------------------------
 builder.Services.AddTransient<CorrelationIdMiddleware>();
+
+builder.Services.AddScoped<IPaymentTimelineProjectionWriter, PaymentTimelineProjectionWriter>();
+
 
 
 // -------------------------------
