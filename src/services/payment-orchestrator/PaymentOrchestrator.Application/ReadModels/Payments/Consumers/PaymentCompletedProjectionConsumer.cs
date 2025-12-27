@@ -27,7 +27,7 @@ public sealed class PaymentCompletedProjectionConsumer
     {
         _logger.LogInformation(
               "PaymentCompletedProjectionConsumer start | PaymentId={PaymentId}",
-              context.Message.PaymentId.ToString());
+              context.Message.PaymentId);
 
         var evt = context.Message;
         var consumerName = nameof(PaymentCompletedProjectionConsumer);

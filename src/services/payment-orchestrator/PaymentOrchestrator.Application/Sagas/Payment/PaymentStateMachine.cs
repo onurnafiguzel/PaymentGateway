@@ -40,7 +40,7 @@ public sealed class PaymentStateMachine
         InstanceState(x => x.CurrentState);
 
         // -------------------------------------------------
-        // CORRELATION (KRİTİK)
+        // CORRELATION
         // -------------------------------------------------
         Event(() => PaymentCreated, x =>
         {
@@ -57,9 +57,6 @@ public sealed class PaymentStateMachine
 
         Event(() => PaymentFailed,
             x => x.CorrelateById(ctx => ctx.Message.CorrelationId));
-
-        //Event(() => ProviderTimeoutExpired,
-        //    x => x.CorrelateById(ctx => ctx.Message.CorrelationId));
 
         // -------------------------------------------------
         // PROVIDER TIMEOUT SCHEDULE
@@ -78,11 +75,6 @@ public sealed class PaymentStateMachine
             When(PaymentCreated)
                 .Then(ctx =>
                 {
-                    _logger.LogInformation(
-                        "Saga started | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
-                        ctx.Message.PaymentId,
-                        ctx.Message.CorrelationId);
-
                     ctx.Instance.CorrelationId = ctx.Message.CorrelationId;
                     ctx.Instance.PaymentId = ctx.Message.PaymentId;
                     ctx.Instance.MerchantId = ctx.Message.MerchantId;
@@ -90,7 +82,16 @@ public sealed class PaymentStateMachine
                     ctx.Instance.Currency = ctx.Message.Currency;
                     ctx.Instance.CreatedAt = ctx.Message.CreatedAt;
 
-                    LogTransition(ctx, "INITIAL", nameof(FraudChecking));
+                    using (BeginSagaScope(ctx))
+                    {
+                        _logger.LogInformation(
+                            "Saga started | Amount={Amount} {Currency} | MerchantId={MerchantId}",
+                            ctx.Instance.Amount,
+                            ctx.Instance.Currency,
+                            ctx.Instance.MerchantId);
+
+                        LogTransition(nameof(Initial), nameof(FraudChecking));
+                    }
                 })
                 .TransitionTo(FraudChecking)
                 .Publish(ctx => new StartFraudCheckEvent(
@@ -108,12 +109,13 @@ public sealed class PaymentStateMachine
             When(FraudCheckCompleted)
                 .Then(ctx =>
                 {
-                    _logger.LogInformation(
-                        "FraudCheckCompleted | PaymentId={PaymentId} | IsFraud={IsFraud} | Reason={Reason} | CorrelationId={CorrelationId}",
-                        ctx.Instance.PaymentId,
-                        ctx.Message.IsFraud,
-                        ctx.Message.Reason,
-                        ctx.Instance.CorrelationId);
+                    using (BeginSagaScope(ctx))
+                    {
+                        _logger.LogInformation(
+                            "Fraud check completed | Result={Result} | Reason={Reason}",
+                            ctx.Message.IsFraud ? "FRAUD" : "CLEAN",
+                            ctx.Message.Reason);
+                    }
                 })
                 .IfElse(
                     ctx => ctx.Message.IsFraud,
@@ -122,7 +124,10 @@ public sealed class PaymentStateMachine
                     binder => binder
                         .Then(ctx =>
                         {
-                            LogTransition(ctx, nameof(FraudChecking), nameof(Failed));
+                            using (BeginSagaScope(ctx))
+                            {
+                                LogTransition(nameof(FraudChecking), nameof(Failed));
+                            }
                         })
                         .TransitionTo(Failed)
                         .Publish(ctx => new PaymentFailedEvent(
@@ -135,7 +140,10 @@ public sealed class PaymentStateMachine
                     binder => binder
                         .Then(ctx =>
                         {
-                            LogTransition(ctx, nameof(FraudChecking), nameof(ProviderInitiated));
+                            using (BeginSagaScope(ctx))
+                            {
+                                LogTransition(nameof(FraudChecking), nameof(ProviderInitiated));
+                            }
                         })
                         .Publish(ctx => new ProviderInitiationRequestedEvent(
                             ctx.Instance.CorrelationId,
@@ -145,7 +153,6 @@ public sealed class PaymentStateMachine
                             ctx.Instance.Currency,
                             ctx.Instance.ProviderName
                         ))
-                        // 🔥 PROVIDER TIMEOUT SCHEDULE
                         .Schedule(ProviderTimeoutSchedule, ctx => new ProviderTimeoutExpiredEvent
                         {
                             CorrelationId = ctx.Instance.CorrelationId
@@ -164,7 +171,10 @@ public sealed class PaymentStateMachine
                 .Unschedule(ProviderTimeoutSchedule)
                 .Then(ctx =>
                 {
-                    LogTransition(ctx, nameof(ProviderInitiated), nameof(Completed));
+                    using (BeginSagaScope(ctx))
+                    {
+                        LogTransition(nameof(ProviderInitiated), nameof(Completed));
+                    }
                 })
                 .TransitionTo(Completed),
 
@@ -173,7 +183,10 @@ public sealed class PaymentStateMachine
                 .Unschedule(ProviderTimeoutSchedule)
                 .Then(ctx =>
                 {
-                    LogTransition(ctx, nameof(ProviderInitiated), nameof(Failed));
+                    using (BeginSagaScope(ctx))
+                    {
+                        LogTransition(nameof(ProviderInitiated), nameof(Failed));
+                    }
                 })
                 .TransitionTo(Failed),
 
@@ -181,12 +194,14 @@ public sealed class PaymentStateMachine
             When(ProviderTimeoutSchedule.Received)
                 .Then(ctx =>
                 {
-                    _logger.LogError(
-                        "Provider timeout | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
-                        ctx.Instance.PaymentId,
-                        ctx.Instance.CorrelationId);
+                    using (BeginSagaScope(ctx))
+                    {
+                        _logger.LogError(
+                            "Provider timeout after {TimeoutSeconds}s",
+                            ProviderTimeout.TotalSeconds);
 
-                    LogTransition(ctx, nameof(ProviderInitiated), nameof(Failed));
+                        LogTransition(nameof(ProviderInitiated), nameof(Failed));
+                    }
                 })
                 .TransitionTo(Failed)
                 .Publish(ctx => new PaymentFailedEvent(
@@ -197,16 +212,24 @@ public sealed class PaymentStateMachine
         );
     }
 
-    private void LogTransition(
-        BehaviorContext<PaymentState> ctx,
-        string from,
-        string to)
+    // -------------------------------------------------
+    // LOGGING HELPERS
+    // -------------------------------------------------
+    private IDisposable BeginSagaScope(BehaviorContext<PaymentState> ctx)
+    {
+        return _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["PaymentId"] = ctx.Instance.PaymentId,
+            ["CorrelationId"] = ctx.Instance.CorrelationId,
+            ["SagaState"] = ctx.Instance.CurrentState
+        });
+    }
+
+    private void LogTransition(string from, string to)
     {
         _logger.LogInformation(
-            "Payment saga transition | PaymentId={PaymentId} | {From} -> {To} | CorrelationId={CorrelationId}",
-            ctx.Instance.PaymentId,
+            "Saga transition | {From} -> {To}",
             from,
-            to,
-            ctx.Instance.CorrelationId);
+            to);
     }
 }
