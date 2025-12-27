@@ -7,22 +7,39 @@ using Shared.Messaging.Events.Payments;
 namespace PaymentOrchestrator.Application.Payments.Consumers;
 
 public sealed class ReplayPaymentRequestedConsumer(
-    IMediator mediator,
-    ILogger<ReplayPaymentRequestedConsumer> logger
-) : IConsumer<ReplayPaymentRequestedEvent>
+     IMediator mediator,
+     ILogger<ReplayPaymentRequestedConsumer> logger)
+    : ConsumerBase<ReplayPaymentRequestedEvent>(logger),
+      IConsumer<ReplayPaymentRequestedEvent>
 {
+
     public async Task Consume(ConsumeContext<ReplayPaymentRequestedEvent> context)
     {
-        var evt = context.Message;
+        using (BeginConsumeScope(context, context.Message.PaymentId))
+        {
+            _logger.LogInformation("Consumer start");
 
-        logger.LogInformation(
-            "ReplayPaymentRequestedEvent consumed | PaymentId={PaymentId} | Reason={Reason}",
-            evt.PaymentId,
-            evt.Reason);
+            try
+            {
+                _logger.LogInformation(
+                    "Replay payment requested | Reason={Reason}",
+                    context.Message.Reason);
 
-        await mediator.Send(new ReplayPaymentCommand(
-            evt.PaymentId,
-            evt.Reason
-        ), context.CancellationToken);
+                await mediator.Send(
+                    new ReplayPaymentCommand(
+                        context.Message.PaymentId,
+                        context.Message.Reason),
+                    context.CancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Consumer failed");
+                throw;
+            }
+            finally
+            {
+                _logger.LogInformation("Consumer end");
+            }
+        }
     }
 }

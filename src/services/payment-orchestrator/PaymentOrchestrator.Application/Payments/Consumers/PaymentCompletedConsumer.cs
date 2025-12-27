@@ -9,21 +9,33 @@ namespace PaymentOrchestrator.Application.Payments.Consumers;
 
 public sealed class PaymentCompletedConsumer(
     IMediator mediator,
-    ILogger<PaymentCompletedConsumer> logger
-) : IConsumer<PaymentCompletedEvent>
-{
+    ILogger<PaymentCompletedConsumer> logger)
+    : ConsumerBase<PaymentCompletedEvent>(logger),
+      IConsumer<PaymentCompletedEvent>
+{  
+
     public async Task Consume(ConsumeContext<PaymentCompletedEvent> context)
     {
-        var evt = context.Message;
+        using (BeginConsumeScope(context, context.Message.PaymentId))
+        {
+            _logger.LogInformation("Consumer start");
 
-        logger.LogInformation(
-            "PaymentCompletedEvent consumed | PaymentId={PaymentId}",
-            evt.PaymentId);
-
-        await mediator.Send(new UpdatePaymentStatusCommand(
-            evt.PaymentId,
-            PaymentStatus.Succeeded
-        ));
+            try
+            {
+                await mediator.Send(new UpdatePaymentStatusCommand(
+                    context.Message.PaymentId,
+                    PaymentStatus.Succeeded
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Consumer failed");
+                throw;
+            }
+            finally
+            {
+                _logger.LogInformation("Consumer end");
+            }
+        }
     }
 }
-

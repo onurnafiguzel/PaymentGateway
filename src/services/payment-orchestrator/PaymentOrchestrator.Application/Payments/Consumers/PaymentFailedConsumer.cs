@@ -9,22 +9,37 @@ namespace PaymentOrchestrator.Application.Payments.Consumers;
 
 public sealed class PaymentFailedConsumer(
     IMediator mediator,
-    ILogger<PaymentFailedConsumer> logger
-) : IConsumer<PaymentFailedEvent>
-{
+    ILogger<PaymentFailedConsumer> logger)
+    : ConsumerBase<PaymentFailedEvent>(logger),
+      IConsumer<PaymentFailedEvent>
+{ 
+
     public async Task Consume(ConsumeContext<PaymentFailedEvent> context)
     {
-        var evt = context.Message;
+        using (BeginConsumeScope(context, context.Message.PaymentId))
+        {
+            _logger.LogInformation("Consumer start");
 
-        logger.LogInformation(
-            "PaymentFailedEvent consumed | PaymentId={PaymentId} | Reason={Reason}",
-            evt.PaymentId,
-            evt.Reason);
+            try
+            {
+                _logger.LogInformation(
+                    "Payment failed | Reason={Reason}",
+                    context.Message.Reason);
 
-        await mediator.Send(new UpdatePaymentStatusCommand(
-            evt.PaymentId,
-            PaymentStatus.Failed
-        ));
+                await mediator.Send(new UpdatePaymentStatusCommand(
+                    context.Message.PaymentId,
+                    PaymentStatus.Failed
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Consumer failed");
+                throw;
+            }
+            finally
+            {
+                _logger.LogInformation("Consumer end");
+            }
+        }
     }
 }
-

@@ -9,24 +9,41 @@ namespace PaymentOrchestrator.Application.Payments.Consumers;
 
 public sealed class FraudCheckCompletedConsumer(
     IMediator mediator,
-    ILogger<FraudCheckCompletedConsumer> logger
-) : IConsumer<FraudCheckCompletedEvent>
+    ILogger<FraudCheckCompletedConsumer> logger)
+    : ConsumerBase<FraudCheckCompletedEvent>(logger),
+      IConsumer<FraudCheckCompletedEvent>
 {
+
     public async Task Consume(ConsumeContext<FraudCheckCompletedEvent> context)
     {
-        var evt = context.Message;
+        using (BeginConsumeScope(context, context.Message.PaymentId))
+        {
+            _logger.LogInformation("Consumer start");
 
-        logger.LogInformation(
-            "FraudCheckCompletedEvent consumed | PaymentId={PaymentId} | IsFraud={IsFraud}",
-            evt.PaymentId,
-            evt.IsFraud);
+            try
+            {
+                _logger.LogInformation(
+                    "Fraud check completed | IsFraud={IsFraud} | Reason={Reason}",
+                    context.Message.IsFraud,
+                    context.Message.Reason);
 
-        if (!evt.IsFraud)
-            return; // Saga devam edecek, domain update yok
+                if (!context.Message.IsFraud)
+                    return;
 
-        await mediator.Send(new UpdatePaymentStatusCommand(
-            evt.PaymentId,
-            PaymentStatus.Failed
-        ));
+                await mediator.Send(new UpdatePaymentStatusCommand(
+                    context.Message.PaymentId,
+                    PaymentStatus.Failed
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Consumer failed");
+                throw;
+            }
+            finally
+            {
+                _logger.LogInformation("Consumer end");
+            }
+        }
     }
 }

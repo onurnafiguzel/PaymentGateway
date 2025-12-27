@@ -4,27 +4,22 @@ using Shared.Messaging.Events.Payments;
 
 namespace PaymentOrchestrator.Application.Payments.Consumers;
 
-public sealed class PaymentCreatedConsumer : IConsumer<PaymentCreatedEvent>
+public sealed class PaymentCreatedConsumer(
+    ILogger<PaymentCreatedConsumer> logger)
+    : ConsumerBase<PaymentCreatedEvent>(logger),
+      IConsumer<PaymentCreatedEvent>
 {
-    private readonly ILogger<PaymentCreatedConsumer> _logger;
-
-    public PaymentCreatedConsumer(ILogger<PaymentCreatedConsumer> logger)
-    {
-        _logger = logger;
-    }
 
     public Task Consume(ConsumeContext<PaymentCreatedEvent> context)
     {
-        _logger.LogInformation(
-            "PaymentCreatedEvent consumed | PaymentId={PaymentId} | CorrelationId={CorrelationId}",
-            context.Message.PaymentId,
-            context.Message.CorrelationId);
+        using (BeginConsumeScope(context, context.Message.PaymentId))
+        {
+            _logger.LogInformation("Consumer start");
 
-        // DB write YOK
-        // Aggregate YOK
-        // Saga zaten bu event'i dinliyor
-        // Fraud flow'u tetikleniyor
-        return Task.CompletedTask;
+            _logger.LogInformation("Payment created event received");
+
+            _logger.LogInformation("Consumer end");
+            return Task.CompletedTask;
+        }
     }
 }
-
